@@ -4,8 +4,7 @@ use (
 	./bitsong
 	./config
 	./mongo
+	./osmosis
 	./tendermint
 	./utility
 )
-
-replace github.com/angelorc/sinfonia-go/tendermint => ./tendermint

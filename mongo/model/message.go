@@ -17,7 +17,7 @@ import (
  * DB Info
  */
 
-const DB_COLLECTION_NAME__MESSAGE = "message"
+const DB_COLLECTION_NAME__MESSAGE = "messages"
 const DB_REF_NAME__MESSAGE = "default"
 
 /**

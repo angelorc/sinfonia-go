@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/angelorc/sinfonia-go/bitsong/chain"
+	"github.com/angelorc/sinfonia-go/osmosis/chain"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
