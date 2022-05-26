@@ -1,0 +1,11 @@
+go 1.18
+
+use (
+	./bitsong
+	./config
+	./mongo
+	./tendermint
+	./utility
+)
+
+replace github.com/angelorc/sinfonia-go/tendermint => ./tendermint
