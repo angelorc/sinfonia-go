@@ -13,7 +13,7 @@ func GetOsmosisConfig() *Config {
 		ChainID:       "osmosis-sinfonia-test-1",
 		RPCAddr:       "https://rpc.osmosis.devnet.bitsong.network:443",
 		GRPCAddr:      "http://142.132.252.143:10090",
-		AccountPrefix: "osmosis",
+		AccountPrefix: "osmo",
 		Timeout:       "10s",
 	}
 }
