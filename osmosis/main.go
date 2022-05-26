@@ -26,5 +26,5 @@ func main() {
 		log.Fatalf("failed to get RPC endpoints on chain %s. err: %v", "osmosis", err)
 	}
 
-	indexer.NewIndexer(client).Start(1, 1000, 10)
+	indexer.NewIndexer(client).Start(1, 173013, 5)
 }
