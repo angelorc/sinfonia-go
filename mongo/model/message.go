@@ -160,7 +160,7 @@ func (m *Message) Create(data *MessageCreate) error {
 	defer cancel()
 
 	// TODO: check unique
-	item := new(Transaction)
+	item := new(Message)
 	f := bson.M{
 		"$and": []bson.M{
 			{"height": data.Height},
@@ -169,7 +169,7 @@ func (m *Message) Create(data *MessageCreate) error {
 		},
 	}
 	collection.FindOne(ctx, f).Decode(&item)
-	if item.Hash != "" {
+	if item.TxHash != "" {
 		return nil
 	}
 
