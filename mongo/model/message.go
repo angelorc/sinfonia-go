@@ -58,25 +58,25 @@ type MessageWhereUnique struct {
 
 type MessageWhere struct {
 	ID        *primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Height    int64               `json:"height,omitempty" bson:"height"`
-	TxHash    string              `json:"tx_hash,omitempty" bson:"tx_hash"`
-	MsgIndex  int                 `json:"msg_index,omitempty" bson:"msg_index"`
-	MsgType   string              `json:"msg_type,omitempty" bson:"msg_type,omitempty"`
-	Signer    string              `json:"signer,omitempty" bson:"signer,omitempty"`
-	Timestamp time.Time           `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
-	OR        []bson.M            `json:"$or,omitempty" bson:"$or,omitempty"`
+	Height    *int64              `json:"height,omitempty" bson:"height,omitempty"`
+	TxHash    *string             `json:"tx_hash,omitempty" bson:"tx_hash,omitempty"`
+	MsgIndex  *int                `json:"msg_index,omitempty" bson:"msg_index,omitempty"`
+	MsgType   *string             `json:"msg_type,omitempty" bson:"msg_type,omitempty"`
+	Signer    *string             `json:"signer,omitempty" bson:"signer,omitempty"`
+	Timestamp *time.Time          `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
+	OR        *[]bson.M           `json:"$or,omitempty" bson:"$or,omitempty"`
 }
 
 // Write
 
 type MessageCreate struct {
-	ID        *primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Height    *int64              `json:"height,omitempty" bson:"height"`
-	TxHash    *string             `json:"tx_hash" bson:"tx_hash" validate:"required"`
-	MsgIndex  *int                `json:"msg_index" bson:"msg_index" validate:"required"`
-	MsgType   *string             `json:"msg_type,omitempty" bson:"msg_type,omitempty"`
-	Signer    *string             `json:"signer,omitempty" bson:"signer,omitempty"`
-	Timestamp time.Time           `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
+	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Height    int64              `json:"height,omitempty" bson:"height,omitempty"`
+	TxHash    string             `json:"tx_hash" bson:"tx_hash,omitempty"`
+	MsgIndex  int                `json:"msg_index" bson:"msg_index,omitempty"`
+	MsgType   string             `json:"msg_type,omitempty" bson:"msg_type,omitempty"`
+	Signer    string             `json:"signer,omitempty" bson:"signer,omitempty"`
+	Timestamp time.Time          `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
 }
 
 /**
@@ -85,7 +85,7 @@ type MessageCreate struct {
 
 // Read
 
-func (m *Message) Message(filter *MessageWhere) error {
+func (m *Message) One(filter *MessageWhere) error {
 	collection := db.GetCollection(DB_COLLECTION_NAME__MESSAGE, DB_REF_NAME__MESSAGE)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

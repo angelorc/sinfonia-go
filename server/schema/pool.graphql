@@ -1,0 +1,54 @@
+# MODEL
+##########
+
+type Pool @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Pool") {
+    id: ObjectID!
+    height: Int!
+    tx_hash: String!
+    msg_index: Int!
+
+    pool_id: Int!
+    pool_assets: [PoolAsset]
+    swap_fee: String!
+    exit_fee: String!
+    sender: String!
+
+    timestamp: Time!
+}
+
+type PoolAsset @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.PoolAsset") {
+    token: String!
+    weight: String!
+}
+
+# ENUM
+##########
+enum PoolOrderByENUM @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.PoolOrderByENUM") {
+    timestamp_ASC
+    timestamp_DESC
+    height_ASC
+    height_DESC
+}
+
+# DTO
+##########
+
+# Read
+input PoolWhereUnique @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.PoolWhereUnique") {
+    id: ObjectID!
+}
+
+input PoolWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.PoolWhere") {
+    id: ObjectID
+    height: Int
+    tx_hash: String
+    msg_index: Int
+
+    pool_id: Int
+    pool_assets: [PoolAssetWhere]
+}
+
+input PoolAssetWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.PoolAssetWhere") {
+    token: String
+    weight: String
+}

@@ -1,0 +1,39 @@
+# MODEL
+##########
+
+type Message @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Message") {
+    id: ObjectID!
+    height: Int!
+    tx_hash: String!
+    msg_index: Int!
+    msg_type: String!
+    signer: String!
+    timestamp: Time!
+}
+
+# ENUM
+##########
+enum MessageOrderByENUM @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.MessageOrderByENUM") {
+    timestamp_ASC
+    timestamp_DESC
+    height_ASC
+    height_DESC
+}
+
+# DTO
+##########
+
+# Read
+input MessageWhereUnique @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.MessageWhereUnique") {
+    id: ObjectID!
+}
+
+input MessageWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.MessageWhere") {
+    id: ObjectID
+    height: Int
+    tx_hash: String
+    msg_index: Int
+    msg_type: String
+    signer: String
+    timestamp: Time
+}

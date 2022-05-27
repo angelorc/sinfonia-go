@@ -34,7 +34,7 @@ type Pool struct {
 	TxHash   string             `json:"tx_hash" bson:"tx_hash"`
 	MsgIndex int                `json:"msg_index" bson:"msg_index"`
 
-	PoolID     uint64      `json:"pool_id" bson:"pool_id" validate:"required"`
+	PoolID     int64       `json:"pool_id" bson:"pool_id" validate:"required"`
 	PoolAssets []PoolAsset `json:"pool_assets" bson:"pool_assets" validate:"required"`
 	SwapFee    string      `json:"swap_fee" bson:"swap_fee" validate:"required"`
 	ExitFee    string      `json:"exit_fee" bson:"exit_fee"`
@@ -69,9 +69,14 @@ type PoolWhere struct {
 	TxHash   *string             `json:"tx_hash,omitempty" bson:"tx_hash,omitempty"`
 	MsgIndex *int                `json:"msg_index,omitempty" bson:"msg_index,omitempty"`
 
-	PoolID     *uint64      `json:"pool_id,omitempty" bson:"pool_id,omitempty"`
-	PoolAssets *[]PoolAsset `json:"pool_assets,omitempty" bson:"pool_assets,omitempty"`
-	OR         []bson.M     `json:"$or,omitempty" bson:"$or,omitempty"`
+	PoolID     *int64            `json:"pool_id,omitempty" bson:"pool_id,omitempty"`
+	PoolAssets *[]PoolAssetWhere `json:"pool_assets,omitempty" bson:"pool_assets,omitempty"`
+	OR         []bson.M          `json:"$or,omitempty" bson:"$or,omitempty"`
+}
+
+type PoolAssetWhere struct {
+	Token  *string `json:"token,omitempty" bson:"token,omitempty"`
+	Weight *string `json:"weight,omitempty" bson:"weight,omitempty"`
 }
 
 // Write

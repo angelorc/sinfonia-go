@@ -34,7 +34,7 @@ type Swap struct {
 	TxHash   string             `json:"tx_hash" bson:"tx_hash"`
 	MsgIndex int                `json:"msg_index" bson:"msg_index"`
 
-	PoolId    uint64 `json:"pool_id" bson:"pool_id"`
+	PoolId    int64  `json:"pool_id" bson:"pool_id"`
 	TokensIn  string `json:"tokens_in" bson:"tokens_in"`
 	TokensOut string `json:"tokens_out" bson:"tokens_out"`
 	Account   string `json:"account" bson:"account"`
@@ -61,18 +61,18 @@ type SwapWhereUnique struct {
 
 type SwapWhere struct {
 	ID       *primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Height   int64               `json:"height,omitempty" bson:"height"`
-	TxHash   string              `json:"tx_hash,omitempty" bson:"tx_hash"`
-	MsgIndex int                 `json:"msg_index,omitempty" bson:"msg_index"`
+	Height   *int64              `json:"height,omitempty" bson:"height,omitempty"`
+	TxHash   *string             `json:"tx_hash,omitempty" bson:"tx_hash,omitempty"`
+	MsgIndex *int                `json:"msg_index,omitempty" bson:"msg_index,omitempty"`
 
-	PoolId    uint64 `json:"pool_id" bson:"pool_id"`
-	TokensIn  string `json:"tokens_in" bson:"tokens_in"`
-	TokensOut string `json:"tokens_out" bson:"tokens_out"`
-	Account   string `json:"account" bson:"account"`
-	Fee       string `json:"fee" bson:"fee"`
+	PoolId    *int64  `json:"pool_id,omitempty" bson:"pool_id,omitempty"`
+	TokensIn  *string `json:"tokens_in,omitempty" bson:"tokens_in,omitempty"`
+	TokensOut *string `json:"tokens_out,omitempty" bson:"tokens_out,omitempty"`
+	Account   *string `json:"account,omitempty" bson:"account,omitempty"`
+	Fee       *string `json:"fee,omitempty" bson:"fee,omitempty"`
 
-	Timestamp time.Time `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
-	OR        []bson.M  `json:"$or,omitempty" bson:"$or,omitempty"`
+	Timestamp *time.Time `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
+	OR        []bson.M   `json:"$or,omitempty" bson:"$or,omitempty"`
 }
 
 // Write
@@ -83,7 +83,7 @@ type SwapCreate struct {
 	TxHash   *string             `json:"tx_hash" bson:"tx_hash" validate:"required"`
 	MsgIndex *int                `json:"msg_index" bson:"msg_index" validate:"required"`
 
-	PoolId    *uint64 `json:"pool_id" bson:"pool_id"`
+	PoolId    *int64  `json:"pool_id" bson:"pool_id"`
 	TokensIn  *string `json:"tokens_in" bson:"tokens_in"`
 	TokensOut *string `json:"tokens_out" bson:"tokens_out"`
 	Account   *string `json:"account" bson:"account"`
@@ -98,7 +98,7 @@ type SwapCreate struct {
 
 // Read
 
-func (m *Swap) Swap(filter *SwapWhere) error {
+func (m *Swap) One(filter *SwapWhere) error {
 	collection := db.GetCollection(DB_COLLECTION_NAME__SWAP, DB_REF_NAME__SWAP)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

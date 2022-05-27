@@ -39,6 +39,24 @@ type Query {
         search: String
     ): Int
 
+    # Message
+    ##########
+    message(
+        where: MessageWhere
+    ): Message
+
+    messages(
+        where: MessageWhere
+        in: [ObjectID]
+        orderBy: MessageOrderByENUM
+        skip: Int
+        limit: Int
+    ): [Message]!
+
+    messageCount(
+        where: MessageWhere
+    ): Int
+
     # Account
     ##########
     account(
@@ -73,5 +91,41 @@ type Query {
 
     incentiveCount(
         where: IncentiveWhere
+    ): Int
+
+    # Swap
+    ##########
+    swap(
+        where: SwapWhere
+    ): Swap
+
+    swaps(
+        where: SwapWhere
+        in: [ObjectID]
+        orderBy: SwapOrderByENUM
+        skip: Int
+        limit: Int
+    ): [Swap]!
+
+    swapCount(
+        where: SwapWhere
+    ): Int
+
+    # Pool
+    ##########
+    pool(
+        where: PoolWhere
+    ): Pool
+
+    pools(
+        where: PoolWhere
+        in: [ObjectID]
+        orderBy: PoolOrderByENUM
+        skip: Int
+        limit: Int
+    ): [Pool]!
+
+    poolCount(
+        where: PoolWhere
     ): Int
 }

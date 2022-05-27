@@ -40,8 +40,6 @@ type Config struct {
 
 type ResolverRoot interface {
 	Query() QueryResolver
-	IncentiveAssetWhere() IncentiveAssetWhereResolver
-	IncentiveWhere() IncentiveWhereResolver
 }
 
 type DirectiveRoot struct {
@@ -70,6 +68,34 @@ type ComplexityRoot struct {
 		Denom  func(childComplexity int) int
 	}
 
+	Message struct {
+		Height    func(childComplexity int) int
+		ID        func(childComplexity int) int
+		MsgIndex  func(childComplexity int) int
+		MsgType   func(childComplexity int) int
+		Signer    func(childComplexity int) int
+		Timestamp func(childComplexity int) int
+		TxHash    func(childComplexity int) int
+	}
+
+	Pool struct {
+		ExitFee    func(childComplexity int) int
+		Height     func(childComplexity int) int
+		ID         func(childComplexity int) int
+		MsgIndex   func(childComplexity int) int
+		PoolAssets func(childComplexity int) int
+		PoolID     func(childComplexity int) int
+		Sender     func(childComplexity int) int
+		SwapFee    func(childComplexity int) int
+		Timestamp  func(childComplexity int) int
+		TxHash     func(childComplexity int) int
+	}
+
+	PoolAsset struct {
+		Token  func(childComplexity int) int
+		Weight func(childComplexity int) int
+	}
+
 	Query struct {
 		Account          func(childComplexity int, where *model.AccountWhere) int
 		AccountCount     func(childComplexity int, where *model.AccountWhere) int
@@ -77,9 +103,31 @@ type ComplexityRoot struct {
 		Incentive        func(childComplexity int, where *model.IncentiveWhere) int
 		IncentiveCount   func(childComplexity int, where *model.IncentiveWhere) int
 		Incentives       func(childComplexity int, where *model.IncentiveWhere, in []*primitive.ObjectID, orderBy *model.IncentiveOrderByENUM, skip *int, limit *int) int
+		Message          func(childComplexity int, where *model.MessageWhere) int
+		MessageCount     func(childComplexity int, where *model.MessageWhere) int
+		Messages         func(childComplexity int, where *model.MessageWhere, in []*primitive.ObjectID, orderBy *model.MessageOrderByENUM, skip *int, limit *int) int
+		Pool             func(childComplexity int, where *model.PoolWhere) int
+		PoolCount        func(childComplexity int, where *model.PoolWhere) int
+		Pools            func(childComplexity int, where *model.PoolWhere, in []*primitive.ObjectID, orderBy *model.PoolOrderByENUM, skip *int, limit *int) int
+		Swap             func(childComplexity int, where *model.SwapWhere) int
+		SwapCount        func(childComplexity int, where *model.SwapWhere) int
+		Swaps            func(childComplexity int, where *model.SwapWhere, in []*primitive.ObjectID, orderBy *model.SwapOrderByENUM, skip *int, limit *int) int
 		Transaction      func(childComplexity int, where *model.TransactionWhere) int
 		TransactionCount func(childComplexity int, where *model.TransactionWhere, search *string) int
 		Transactions     func(childComplexity int, where *model.TransactionWhere, in []*primitive.ObjectID, orderBy *model.TransactionOrderByENUM, skip *int, limit *int) int
+	}
+
+	Swap struct {
+		Account   func(childComplexity int) int
+		Fee       func(childComplexity int) int
+		Height    func(childComplexity int) int
+		ID        func(childComplexity int) int
+		MsgIndex  func(childComplexity int) int
+		PoolId    func(childComplexity int) int
+		Timestamp func(childComplexity int) int
+		TokensIn  func(childComplexity int) int
+		TokensOut func(childComplexity int) int
+		TxHash    func(childComplexity int) int
 	}
 
 	Transaction struct {
@@ -100,24 +148,21 @@ type QueryResolver interface {
 	Transaction(ctx context.Context, where *model.TransactionWhere) (*model.Transaction, error)
 	Transactions(ctx context.Context, where *model.TransactionWhere, in []*primitive.ObjectID, orderBy *model.TransactionOrderByENUM, skip *int, limit *int) ([]*model.Transaction, error)
 	TransactionCount(ctx context.Context, where *model.TransactionWhere, search *string) (*int, error)
+	Message(ctx context.Context, where *model.MessageWhere) (*model.Message, error)
+	Messages(ctx context.Context, where *model.MessageWhere, in []*primitive.ObjectID, orderBy *model.MessageOrderByENUM, skip *int, limit *int) ([]*model.Message, error)
+	MessageCount(ctx context.Context, where *model.MessageWhere) (*int, error)
 	Account(ctx context.Context, where *model.AccountWhere) (*model.Account, error)
 	Accounts(ctx context.Context, where *model.AccountWhere, in []*primitive.ObjectID, orderBy *model.AccountOrderByENUM, skip *int, limit *int) ([]*model.Account, error)
 	AccountCount(ctx context.Context, where *model.AccountWhere) (*int, error)
 	Incentive(ctx context.Context, where *model.IncentiveWhere) (*model.Incentive, error)
 	Incentives(ctx context.Context, where *model.IncentiveWhere, in []*primitive.ObjectID, orderBy *model.IncentiveOrderByENUM, skip *int, limit *int) ([]*model.Incentive, error)
 	IncentiveCount(ctx context.Context, where *model.IncentiveWhere) (*int, error)
-}
-
-type IncentiveAssetWhereResolver interface {
-	ID(ctx context.Context, obj *model.IncentiveAssetWhere, data *primitive.ObjectID) error
-	Height(ctx context.Context, obj *model.IncentiveAssetWhere, data *int) error
-	Receiver(ctx context.Context, obj *model.IncentiveAssetWhere, data *string) error
-	Assets(ctx context.Context, obj *model.IncentiveAssetWhere, data []*model.IncentiveAssetWhere) error
-	Timestamp(ctx context.Context, obj *model.IncentiveAssetWhere, data *time.Time) error
-}
-type IncentiveWhereResolver interface {
-	Amount(ctx context.Context, obj *model.IncentiveWhere, data *int) error
-	Denom(ctx context.Context, obj *model.IncentiveWhere, data *string) error
+	Swap(ctx context.Context, where *model.SwapWhere) (*model.Swap, error)
+	Swaps(ctx context.Context, where *model.SwapWhere, in []*primitive.ObjectID, orderBy *model.SwapOrderByENUM, skip *int, limit *int) ([]*model.Swap, error)
+	SwapCount(ctx context.Context, where *model.SwapWhere) (*int, error)
+	Pool(ctx context.Context, where *model.PoolWhere) (*model.Pool, error)
+	Pools(ctx context.Context, where *model.PoolWhere, in []*primitive.ObjectID, orderBy *model.PoolOrderByENUM, skip *int, limit *int) ([]*model.Pool, error)
+	PoolCount(ctx context.Context, where *model.PoolWhere) (*int, error)
 }
 
 type executableSchema struct {
@@ -226,6 +271,139 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.IncentiveAsset.Denom(childComplexity), true
 
+	case "Message.height":
+		if e.complexity.Message.Height == nil {
+			break
+		}
+
+		return e.complexity.Message.Height(childComplexity), true
+
+	case "Message.id":
+		if e.complexity.Message.ID == nil {
+			break
+		}
+
+		return e.complexity.Message.ID(childComplexity), true
+
+	case "Message.msg_index":
+		if e.complexity.Message.MsgIndex == nil {
+			break
+		}
+
+		return e.complexity.Message.MsgIndex(childComplexity), true
+
+	case "Message.msg_type":
+		if e.complexity.Message.MsgType == nil {
+			break
+		}
+
+		return e.complexity.Message.MsgType(childComplexity), true
+
+	case "Message.signer":
+		if e.complexity.Message.Signer == nil {
+			break
+		}
+
+		return e.complexity.Message.Signer(childComplexity), true
+
+	case "Message.timestamp":
+		if e.complexity.Message.Timestamp == nil {
+			break
+		}
+
+		return e.complexity.Message.Timestamp(childComplexity), true
+
+	case "Message.tx_hash":
+		if e.complexity.Message.TxHash == nil {
+			break
+		}
+
+		return e.complexity.Message.TxHash(childComplexity), true
+
+	case "Pool.exit_fee":
+		if e.complexity.Pool.ExitFee == nil {
+			break
+		}
+
+		return e.complexity.Pool.ExitFee(childComplexity), true
+
+	case "Pool.height":
+		if e.complexity.Pool.Height == nil {
+			break
+		}
+
+		return e.complexity.Pool.Height(childComplexity), true
+
+	case "Pool.id":
+		if e.complexity.Pool.ID == nil {
+			break
+		}
+
+		return e.complexity.Pool.ID(childComplexity), true
+
+	case "Pool.msg_index":
+		if e.complexity.Pool.MsgIndex == nil {
+			break
+		}
+
+		return e.complexity.Pool.MsgIndex(childComplexity), true
+
+	case "Pool.pool_assets":
+		if e.complexity.Pool.PoolAssets == nil {
+			break
+		}
+
+		return e.complexity.Pool.PoolAssets(childComplexity), true
+
+	case "Pool.pool_id":
+		if e.complexity.Pool.PoolID == nil {
+			break
+		}
+
+		return e.complexity.Pool.PoolID(childComplexity), true
+
+	case "Pool.sender":
+		if e.complexity.Pool.Sender == nil {
+			break
+		}
+
+		return e.complexity.Pool.Sender(childComplexity), true
+
+	case "Pool.swap_fee":
+		if e.complexity.Pool.SwapFee == nil {
+			break
+		}
+
+		return e.complexity.Pool.SwapFee(childComplexity), true
+
+	case "Pool.timestamp":
+		if e.complexity.Pool.Timestamp == nil {
+			break
+		}
+
+		return e.complexity.Pool.Timestamp(childComplexity), true
+
+	case "Pool.tx_hash":
+		if e.complexity.Pool.TxHash == nil {
+			break
+		}
+
+		return e.complexity.Pool.TxHash(childComplexity), true
+
+	case "PoolAsset.token":
+		if e.complexity.PoolAsset.Token == nil {
+			break
+		}
+
+		return e.complexity.PoolAsset.Token(childComplexity), true
+
+	case "PoolAsset.weight":
+		if e.complexity.PoolAsset.Weight == nil {
+			break
+		}
+
+		return e.complexity.PoolAsset.Weight(childComplexity), true
+
 	case "Query.account":
 		if e.complexity.Query.Account == nil {
 			break
@@ -298,6 +476,114 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Incentives(childComplexity, args["where"].(*model.IncentiveWhere), args["in"].([]*primitive.ObjectID), args["orderBy"].(*model.IncentiveOrderByENUM), args["skip"].(*int), args["limit"].(*int)), true
 
+	case "Query.message":
+		if e.complexity.Query.Message == nil {
+			break
+		}
+
+		args, err := ec.field_Query_message_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Message(childComplexity, args["where"].(*model.MessageWhere)), true
+
+	case "Query.messageCount":
+		if e.complexity.Query.MessageCount == nil {
+			break
+		}
+
+		args, err := ec.field_Query_messageCount_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.MessageCount(childComplexity, args["where"].(*model.MessageWhere)), true
+
+	case "Query.messages":
+		if e.complexity.Query.Messages == nil {
+			break
+		}
+
+		args, err := ec.field_Query_messages_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Messages(childComplexity, args["where"].(*model.MessageWhere), args["in"].([]*primitive.ObjectID), args["orderBy"].(*model.MessageOrderByENUM), args["skip"].(*int), args["limit"].(*int)), true
+
+	case "Query.pool":
+		if e.complexity.Query.Pool == nil {
+			break
+		}
+
+		args, err := ec.field_Query_pool_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Pool(childComplexity, args["where"].(*model.PoolWhere)), true
+
+	case "Query.poolCount":
+		if e.complexity.Query.PoolCount == nil {
+			break
+		}
+
+		args, err := ec.field_Query_poolCount_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.PoolCount(childComplexity, args["where"].(*model.PoolWhere)), true
+
+	case "Query.pools":
+		if e.complexity.Query.Pools == nil {
+			break
+		}
+
+		args, err := ec.field_Query_pools_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Pools(childComplexity, args["where"].(*model.PoolWhere), args["in"].([]*primitive.ObjectID), args["orderBy"].(*model.PoolOrderByENUM), args["skip"].(*int), args["limit"].(*int)), true
+
+	case "Query.swap":
+		if e.complexity.Query.Swap == nil {
+			break
+		}
+
+		args, err := ec.field_Query_swap_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Swap(childComplexity, args["where"].(*model.SwapWhere)), true
+
+	case "Query.swapCount":
+		if e.complexity.Query.SwapCount == nil {
+			break
+		}
+
+		args, err := ec.field_Query_swapCount_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.SwapCount(childComplexity, args["where"].(*model.SwapWhere)), true
+
+	case "Query.swaps":
+		if e.complexity.Query.Swaps == nil {
+			break
+		}
+
+		args, err := ec.field_Query_swaps_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Swaps(childComplexity, args["where"].(*model.SwapWhere), args["in"].([]*primitive.ObjectID), args["orderBy"].(*model.SwapOrderByENUM), args["skip"].(*int), args["limit"].(*int)), true
+
 	case "Query.transaction":
 		if e.complexity.Query.Transaction == nil {
 			break
@@ -333,6 +619,76 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Transactions(childComplexity, args["where"].(*model.TransactionWhere), args["in"].([]*primitive.ObjectID), args["orderBy"].(*model.TransactionOrderByENUM), args["skip"].(*int), args["limit"].(*int)), true
+
+	case "Swap.account":
+		if e.complexity.Swap.Account == nil {
+			break
+		}
+
+		return e.complexity.Swap.Account(childComplexity), true
+
+	case "Swap.fee":
+		if e.complexity.Swap.Fee == nil {
+			break
+		}
+
+		return e.complexity.Swap.Fee(childComplexity), true
+
+	case "Swap.height":
+		if e.complexity.Swap.Height == nil {
+			break
+		}
+
+		return e.complexity.Swap.Height(childComplexity), true
+
+	case "Swap.id":
+		if e.complexity.Swap.ID == nil {
+			break
+		}
+
+		return e.complexity.Swap.ID(childComplexity), true
+
+	case "Swap.msg_index":
+		if e.complexity.Swap.MsgIndex == nil {
+			break
+		}
+
+		return e.complexity.Swap.MsgIndex(childComplexity), true
+
+	case "Swap.pool_id":
+		if e.complexity.Swap.PoolId == nil {
+			break
+		}
+
+		return e.complexity.Swap.PoolId(childComplexity), true
+
+	case "Swap.timestamp":
+		if e.complexity.Swap.Timestamp == nil {
+			break
+		}
+
+		return e.complexity.Swap.Timestamp(childComplexity), true
+
+	case "Swap.tokens_in":
+		if e.complexity.Swap.TokensIn == nil {
+			break
+		}
+
+		return e.complexity.Swap.TokensIn(childComplexity), true
+
+	case "Swap.tokens_out":
+		if e.complexity.Swap.TokensOut == nil {
+			break
+		}
+
+		return e.complexity.Swap.TokensOut(childComplexity), true
+
+	case "Swap.tx_hash":
+		if e.complexity.Swap.TxHash == nil {
+			break
+		}
+
+		return e.complexity.Swap.TxHash(childComplexity), true
 
 	case "Transaction.code":
 		if e.complexity.Transaction.Code == nil {
@@ -417,6 +773,13 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputIncentiveAssetWhere,
 		ec.unmarshalInputIncentiveWhere,
 		ec.unmarshalInputIncentiveWhereUnique,
+		ec.unmarshalInputMessageWhere,
+		ec.unmarshalInputMessageWhereUnique,
+		ec.unmarshalInputPoolAssetWhere,
+		ec.unmarshalInputPoolWhere,
+		ec.unmarshalInputPoolWhereUnique,
+		ec.unmarshalInputSwapWhere,
+		ec.unmarshalInputSwapWhereUnique,
 		ec.unmarshalInputTransactionWhere,
 		ec.unmarshalInputTransactionWhereUnique,
 	)
@@ -529,16 +892,109 @@ input IncentiveWhereUnique @goModel(model: "github.com/angelorc/sinfonia-go/mong
 }
 
 input IncentiveWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.IncentiveWhere") {
-    amount: Int
-    denom: String
+    id: ObjectID
+    height: Int
+    assets: [IncentiveAssetWhere]
+    receiver: String
+    timestamp: Time
 }
 
 input IncentiveAssetWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.IncentiveAssetWhere") {
+    amount: Int
+    denom: String
+}`, BuiltIn: false},
+	{Name: "../../schema/message.graphql", Input: `# MODEL
+##########
+
+type Message @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Message") {
+    id: ObjectID!
+    height: Int!
+    tx_hash: String!
+    msg_index: Int!
+    msg_type: String!
+    signer: String!
+    timestamp: Time!
+}
+
+# ENUM
+##########
+enum MessageOrderByENUM @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.MessageOrderByENUM") {
+    timestamp_ASC
+    timestamp_DESC
+    height_ASC
+    height_DESC
+}
+
+# DTO
+##########
+
+# Read
+input MessageWhereUnique @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.MessageWhereUnique") {
+    id: ObjectID!
+}
+
+input MessageWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.MessageWhere") {
     id: ObjectID
     height: Int
-    receiver: String
-    assets: [IncentiveAssetWhere]
+    tx_hash: String
+    msg_index: Int
+    msg_type: String
+    signer: String
     timestamp: Time
+}`, BuiltIn: false},
+	{Name: "../../schema/pool.graphql", Input: `# MODEL
+##########
+
+type Pool @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Pool") {
+    id: ObjectID!
+    height: Int!
+    tx_hash: String!
+    msg_index: Int!
+
+    pool_id: Int!
+    pool_assets: [PoolAsset]
+    swap_fee: String!
+    exit_fee: String!
+    sender: String!
+
+    timestamp: Time!
+}
+
+type PoolAsset @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.PoolAsset") {
+    token: String!
+    weight: String!
+}
+
+# ENUM
+##########
+enum PoolOrderByENUM @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.PoolOrderByENUM") {
+    timestamp_ASC
+    timestamp_DESC
+    height_ASC
+    height_DESC
+}
+
+# DTO
+##########
+
+# Read
+input PoolWhereUnique @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.PoolWhereUnique") {
+    id: ObjectID!
+}
+
+input PoolWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.PoolWhere") {
+    id: ObjectID
+    height: Int
+    tx_hash: String
+    msg_index: Int
+
+    pool_id: Int
+    pool_assets: [PoolAssetWhere]
+}
+
+input PoolAssetWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.PoolAssetWhere") {
+    token: String
+    weight: String
 }`, BuiltIn: false},
 	{Name: "../../schema/schema.graphql", Input: `# DIRECTIVE
 ##########
@@ -581,6 +1037,24 @@ type Query {
         search: String
     ): Int
 
+    # Message
+    ##########
+    message(
+        where: MessageWhere
+    ): Message
+
+    messages(
+        where: MessageWhere
+        in: [ObjectID]
+        orderBy: MessageOrderByENUM
+        skip: Int
+        limit: Int
+    ): [Message]!
+
+    messageCount(
+        where: MessageWhere
+    ): Int
+
     # Account
     ##########
     account(
@@ -616,6 +1090,91 @@ type Query {
     incentiveCount(
         where: IncentiveWhere
     ): Int
+
+    # Swap
+    ##########
+    swap(
+        where: SwapWhere
+    ): Swap
+
+    swaps(
+        where: SwapWhere
+        in: [ObjectID]
+        orderBy: SwapOrderByENUM
+        skip: Int
+        limit: Int
+    ): [Swap]!
+
+    swapCount(
+        where: SwapWhere
+    ): Int
+
+    # Pool
+    ##########
+    pool(
+        where: PoolWhere
+    ): Pool
+
+    pools(
+        where: PoolWhere
+        in: [ObjectID]
+        orderBy: PoolOrderByENUM
+        skip: Int
+        limit: Int
+    ): [Pool]!
+
+    poolCount(
+        where: PoolWhere
+    ): Int
+}`, BuiltIn: false},
+	{Name: "../../schema/swap.graphql", Input: `# MODEL
+##########
+
+type Swap @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Swap") {
+    id: ObjectID!
+    height: Int!
+    tx_hash: String!
+    msg_index: Int!
+
+    pool_id: Int!
+    tokens_in: String!
+    tokens_out: String!
+    account: String!
+    fee: String!
+
+    timestamp: Time!
+}
+
+# ENUM
+##########
+enum SwapOrderByENUM @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.SwapOrderByENUM") {
+    timestamp_ASC
+    timestamp_DESC
+    height_ASC
+    height_DESC
+}
+
+# DTO
+##########
+
+# Read
+input SwapWhereUnique @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.SwapWhereUnique") {
+    id: ObjectID!
+}
+
+input SwapWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.SwapWhere") {
+    id: ObjectID
+    height: Int
+    tx_hash: String
+    msg_index: Int
+
+    pool_id: Int
+    tokens_in: String
+    tokens_out: String
+    account: String
+    fee: String
+
+    timestamp: Time
 }`, BuiltIn: false},
 	{Name: "../../schema/transaction.graphql", Input: `# MODEL
 ##########
@@ -817,6 +1376,249 @@ func (ec *executionContext) field_Query_incentives_args(ctx context.Context, raw
 	if tmp, ok := rawArgs["orderBy"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("orderBy"))
 		arg2, err = ec.unmarshalOIncentiveOrderByENUM2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐIncentiveOrderByENUM(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["orderBy"] = arg2
+	var arg3 *int
+	if tmp, ok := rawArgs["skip"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("skip"))
+		arg3, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["skip"] = arg3
+	var arg4 *int
+	if tmp, ok := rawArgs["limit"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+		arg4, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["limit"] = arg4
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_messageCount_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.MessageWhere
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg0, err = ec.unmarshalOMessageWhere2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐMessageWhere(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_message_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.MessageWhere
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg0, err = ec.unmarshalOMessageWhere2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐMessageWhere(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_messages_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.MessageWhere
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg0, err = ec.unmarshalOMessageWhere2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐMessageWhere(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg0
+	var arg1 []*primitive.ObjectID
+	if tmp, ok := rawArgs["in"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("in"))
+		arg1, err = ec.unmarshalOObjectID2ᚕᚖgoᚗmongodbᚗorgᚋmongoᚑdriverᚋbsonᚋprimitiveᚐObjectID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["in"] = arg1
+	var arg2 *model.MessageOrderByENUM
+	if tmp, ok := rawArgs["orderBy"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("orderBy"))
+		arg2, err = ec.unmarshalOMessageOrderByENUM2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐMessageOrderByENUM(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["orderBy"] = arg2
+	var arg3 *int
+	if tmp, ok := rawArgs["skip"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("skip"))
+		arg3, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["skip"] = arg3
+	var arg4 *int
+	if tmp, ok := rawArgs["limit"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+		arg4, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["limit"] = arg4
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_poolCount_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.PoolWhere
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg0, err = ec.unmarshalOPoolWhere2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPoolWhere(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_pool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.PoolWhere
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg0, err = ec.unmarshalOPoolWhere2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPoolWhere(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_pools_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.PoolWhere
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg0, err = ec.unmarshalOPoolWhere2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPoolWhere(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg0
+	var arg1 []*primitive.ObjectID
+	if tmp, ok := rawArgs["in"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("in"))
+		arg1, err = ec.unmarshalOObjectID2ᚕᚖgoᚗmongodbᚗorgᚋmongoᚑdriverᚋbsonᚋprimitiveᚐObjectID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["in"] = arg1
+	var arg2 *model.PoolOrderByENUM
+	if tmp, ok := rawArgs["orderBy"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("orderBy"))
+		arg2, err = ec.unmarshalOPoolOrderByENUM2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPoolOrderByENUM(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["orderBy"] = arg2
+	var arg3 *int
+	if tmp, ok := rawArgs["skip"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("skip"))
+		arg3, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["skip"] = arg3
+	var arg4 *int
+	if tmp, ok := rawArgs["limit"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+		arg4, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["limit"] = arg4
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_swapCount_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.SwapWhere
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg0, err = ec.unmarshalOSwapWhere2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐSwapWhere(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_swap_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.SwapWhere
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg0, err = ec.unmarshalOSwapWhere2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐSwapWhere(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_swaps_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.SwapWhere
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg0, err = ec.unmarshalOSwapWhere2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐSwapWhere(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg0
+	var arg1 []*primitive.ObjectID
+	if tmp, ok := rawArgs["in"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("in"))
+		arg1, err = ec.unmarshalOObjectID2ᚕᚖgoᚗmongodbᚗorgᚋmongoᚑdriverᚋbsonᚋprimitiveᚐObjectID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["in"] = arg1
+	var arg2 *model.SwapOrderByENUM
+	if tmp, ok := rawArgs["orderBy"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("orderBy"))
+		arg2, err = ec.unmarshalOSwapOrderByENUM2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐSwapOrderByENUM(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1531,6 +2333,845 @@ func (ec *executionContext) fieldContext_IncentiveAsset_denom(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Message_id(ctx context.Context, field graphql.CollectedField, obj *model.Message) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Message_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(primitive.ObjectID)
+	fc.Result = res
+	return ec.marshalNObjectID2goᚗmongodbᚗorgᚋmongoᚑdriverᚋbsonᚋprimitiveᚐObjectID(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Message_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Message",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ObjectID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Message_height(ctx context.Context, field graphql.CollectedField, obj *model.Message) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Message_height(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Height, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Message_height(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Message",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Message_tx_hash(ctx context.Context, field graphql.CollectedField, obj *model.Message) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Message_tx_hash(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TxHash, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Message_tx_hash(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Message",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Message_msg_index(ctx context.Context, field graphql.CollectedField, obj *model.Message) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Message_msg_index(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MsgIndex, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Message_msg_index(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Message",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Message_msg_type(ctx context.Context, field graphql.CollectedField, obj *model.Message) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Message_msg_type(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MsgType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Message_msg_type(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Message",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Message_signer(ctx context.Context, field graphql.CollectedField, obj *model.Message) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Message_signer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Signer, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Message_signer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Message",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Message_timestamp(ctx context.Context, field graphql.CollectedField, obj *model.Message) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Message_timestamp(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Timestamp, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Message_timestamp(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Message",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Pool_id(ctx context.Context, field graphql.CollectedField, obj *model.Pool) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Pool_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(primitive.ObjectID)
+	fc.Result = res
+	return ec.marshalNObjectID2goᚗmongodbᚗorgᚋmongoᚑdriverᚋbsonᚋprimitiveᚐObjectID(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Pool_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Pool",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ObjectID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Pool_height(ctx context.Context, field graphql.CollectedField, obj *model.Pool) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Pool_height(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Height, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Pool_height(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Pool",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Pool_tx_hash(ctx context.Context, field graphql.CollectedField, obj *model.Pool) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Pool_tx_hash(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TxHash, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Pool_tx_hash(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Pool",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Pool_msg_index(ctx context.Context, field graphql.CollectedField, obj *model.Pool) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Pool_msg_index(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MsgIndex, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Pool_msg_index(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Pool",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Pool_pool_id(ctx context.Context, field graphql.CollectedField, obj *model.Pool) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Pool_pool_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PoolID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Pool_pool_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Pool",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Pool_pool_assets(ctx context.Context, field graphql.CollectedField, obj *model.Pool) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Pool_pool_assets(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PoolAssets, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]model.PoolAsset)
+	fc.Result = res
+	return ec.marshalOPoolAsset2ᚕgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPoolAsset(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Pool_pool_assets(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Pool",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "token":
+				return ec.fieldContext_PoolAsset_token(ctx, field)
+			case "weight":
+				return ec.fieldContext_PoolAsset_weight(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PoolAsset", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Pool_swap_fee(ctx context.Context, field graphql.CollectedField, obj *model.Pool) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Pool_swap_fee(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SwapFee, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Pool_swap_fee(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Pool",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Pool_exit_fee(ctx context.Context, field graphql.CollectedField, obj *model.Pool) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Pool_exit_fee(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ExitFee, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Pool_exit_fee(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Pool",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Pool_sender(ctx context.Context, field graphql.CollectedField, obj *model.Pool) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Pool_sender(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Sender, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Pool_sender(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Pool",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Pool_timestamp(ctx context.Context, field graphql.CollectedField, obj *model.Pool) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Pool_timestamp(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Timestamp, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Pool_timestamp(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Pool",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PoolAsset_token(ctx context.Context, field graphql.CollectedField, obj *model.PoolAsset) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PoolAsset_token(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Token, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PoolAsset_token(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PoolAsset",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PoolAsset_weight(ctx context.Context, field graphql.CollectedField, obj *model.PoolAsset) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PoolAsset_weight(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Weight, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PoolAsset_weight(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PoolAsset",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_transaction(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_transaction(ctx, field)
 	if err != nil {
@@ -1728,6 +3369,197 @@ func (ec *executionContext) fieldContext_Query_transactionCount(ctx context.Cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_transactionCount_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_message(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_message(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Message(rctx, fc.Args["where"].(*model.MessageWhere))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Message)
+	fc.Result = res
+	return ec.marshalOMessage2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐMessage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Message_id(ctx, field)
+			case "height":
+				return ec.fieldContext_Message_height(ctx, field)
+			case "tx_hash":
+				return ec.fieldContext_Message_tx_hash(ctx, field)
+			case "msg_index":
+				return ec.fieldContext_Message_msg_index(ctx, field)
+			case "msg_type":
+				return ec.fieldContext_Message_msg_type(ctx, field)
+			case "signer":
+				return ec.fieldContext_Message_signer(ctx, field)
+			case "timestamp":
+				return ec.fieldContext_Message_timestamp(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Message", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_message_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_messages(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_messages(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Messages(rctx, fc.Args["where"].(*model.MessageWhere), fc.Args["in"].([]*primitive.ObjectID), fc.Args["orderBy"].(*model.MessageOrderByENUM), fc.Args["skip"].(*int), fc.Args["limit"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Message)
+	fc.Result = res
+	return ec.marshalNMessage2ᚕᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐMessage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_messages(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Message_id(ctx, field)
+			case "height":
+				return ec.fieldContext_Message_height(ctx, field)
+			case "tx_hash":
+				return ec.fieldContext_Message_tx_hash(ctx, field)
+			case "msg_index":
+				return ec.fieldContext_Message_msg_index(ctx, field)
+			case "msg_type":
+				return ec.fieldContext_Message_msg_type(ctx, field)
+			case "signer":
+				return ec.fieldContext_Message_signer(ctx, field)
+			case "timestamp":
+				return ec.fieldContext_Message_timestamp(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Message", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_messages_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_messageCount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_messageCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().MessageCount(rctx, fc.Args["where"].(*model.MessageWhere))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_messageCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_messageCount_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -2104,6 +3936,412 @@ func (ec *executionContext) fieldContext_Query_incentiveCount(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_swap(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_swap(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Swap(rctx, fc.Args["where"].(*model.SwapWhere))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Swap)
+	fc.Result = res
+	return ec.marshalOSwap2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐSwap(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_swap(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Swap_id(ctx, field)
+			case "height":
+				return ec.fieldContext_Swap_height(ctx, field)
+			case "tx_hash":
+				return ec.fieldContext_Swap_tx_hash(ctx, field)
+			case "msg_index":
+				return ec.fieldContext_Swap_msg_index(ctx, field)
+			case "pool_id":
+				return ec.fieldContext_Swap_pool_id(ctx, field)
+			case "tokens_in":
+				return ec.fieldContext_Swap_tokens_in(ctx, field)
+			case "tokens_out":
+				return ec.fieldContext_Swap_tokens_out(ctx, field)
+			case "account":
+				return ec.fieldContext_Swap_account(ctx, field)
+			case "fee":
+				return ec.fieldContext_Swap_fee(ctx, field)
+			case "timestamp":
+				return ec.fieldContext_Swap_timestamp(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Swap", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_swap_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_swaps(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_swaps(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Swaps(rctx, fc.Args["where"].(*model.SwapWhere), fc.Args["in"].([]*primitive.ObjectID), fc.Args["orderBy"].(*model.SwapOrderByENUM), fc.Args["skip"].(*int), fc.Args["limit"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Swap)
+	fc.Result = res
+	return ec.marshalNSwap2ᚕᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐSwap(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_swaps(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Swap_id(ctx, field)
+			case "height":
+				return ec.fieldContext_Swap_height(ctx, field)
+			case "tx_hash":
+				return ec.fieldContext_Swap_tx_hash(ctx, field)
+			case "msg_index":
+				return ec.fieldContext_Swap_msg_index(ctx, field)
+			case "pool_id":
+				return ec.fieldContext_Swap_pool_id(ctx, field)
+			case "tokens_in":
+				return ec.fieldContext_Swap_tokens_in(ctx, field)
+			case "tokens_out":
+				return ec.fieldContext_Swap_tokens_out(ctx, field)
+			case "account":
+				return ec.fieldContext_Swap_account(ctx, field)
+			case "fee":
+				return ec.fieldContext_Swap_fee(ctx, field)
+			case "timestamp":
+				return ec.fieldContext_Swap_timestamp(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Swap", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_swaps_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_swapCount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_swapCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SwapCount(rctx, fc.Args["where"].(*model.SwapWhere))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_swapCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_swapCount_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_pool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_pool(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Pool(rctx, fc.Args["where"].(*model.PoolWhere))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Pool)
+	fc.Result = res
+	return ec.marshalOPool2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_pool(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Pool_id(ctx, field)
+			case "height":
+				return ec.fieldContext_Pool_height(ctx, field)
+			case "tx_hash":
+				return ec.fieldContext_Pool_tx_hash(ctx, field)
+			case "msg_index":
+				return ec.fieldContext_Pool_msg_index(ctx, field)
+			case "pool_id":
+				return ec.fieldContext_Pool_pool_id(ctx, field)
+			case "pool_assets":
+				return ec.fieldContext_Pool_pool_assets(ctx, field)
+			case "swap_fee":
+				return ec.fieldContext_Pool_swap_fee(ctx, field)
+			case "exit_fee":
+				return ec.fieldContext_Pool_exit_fee(ctx, field)
+			case "sender":
+				return ec.fieldContext_Pool_sender(ctx, field)
+			case "timestamp":
+				return ec.fieldContext_Pool_timestamp(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Pool", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_pool_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_pools(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_pools(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Pools(rctx, fc.Args["where"].(*model.PoolWhere), fc.Args["in"].([]*primitive.ObjectID), fc.Args["orderBy"].(*model.PoolOrderByENUM), fc.Args["skip"].(*int), fc.Args["limit"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Pool)
+	fc.Result = res
+	return ec.marshalNPool2ᚕᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_pools(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Pool_id(ctx, field)
+			case "height":
+				return ec.fieldContext_Pool_height(ctx, field)
+			case "tx_hash":
+				return ec.fieldContext_Pool_tx_hash(ctx, field)
+			case "msg_index":
+				return ec.fieldContext_Pool_msg_index(ctx, field)
+			case "pool_id":
+				return ec.fieldContext_Pool_pool_id(ctx, field)
+			case "pool_assets":
+				return ec.fieldContext_Pool_pool_assets(ctx, field)
+			case "swap_fee":
+				return ec.fieldContext_Pool_swap_fee(ctx, field)
+			case "exit_fee":
+				return ec.fieldContext_Pool_exit_fee(ctx, field)
+			case "sender":
+				return ec.fieldContext_Pool_sender(ctx, field)
+			case "timestamp":
+				return ec.fieldContext_Pool_timestamp(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Pool", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_pools_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_poolCount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_poolCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().PoolCount(rctx, fc.Args["where"].(*model.PoolWhere))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_poolCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_poolCount_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query___type(ctx, field)
 	if err != nil {
@@ -2228,6 +4466,446 @@ func (ec *executionContext) fieldContext_Query___schema(ctx context.Context, fie
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Swap_id(ctx context.Context, field graphql.CollectedField, obj *model.Swap) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Swap_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(primitive.ObjectID)
+	fc.Result = res
+	return ec.marshalNObjectID2goᚗmongodbᚗorgᚋmongoᚑdriverᚋbsonᚋprimitiveᚐObjectID(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Swap_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Swap",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ObjectID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Swap_height(ctx context.Context, field graphql.CollectedField, obj *model.Swap) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Swap_height(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Height, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Swap_height(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Swap",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Swap_tx_hash(ctx context.Context, field graphql.CollectedField, obj *model.Swap) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Swap_tx_hash(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TxHash, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Swap_tx_hash(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Swap",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Swap_msg_index(ctx context.Context, field graphql.CollectedField, obj *model.Swap) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Swap_msg_index(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MsgIndex, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Swap_msg_index(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Swap",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Swap_pool_id(ctx context.Context, field graphql.CollectedField, obj *model.Swap) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Swap_pool_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PoolId, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Swap_pool_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Swap",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Swap_tokens_in(ctx context.Context, field graphql.CollectedField, obj *model.Swap) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Swap_tokens_in(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TokensIn, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Swap_tokens_in(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Swap",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Swap_tokens_out(ctx context.Context, field graphql.CollectedField, obj *model.Swap) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Swap_tokens_out(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TokensOut, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Swap_tokens_out(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Swap",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Swap_account(ctx context.Context, field graphql.CollectedField, obj *model.Swap) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Swap_account(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Account, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Swap_account(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Swap",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Swap_fee(ctx context.Context, field graphql.CollectedField, obj *model.Swap) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Swap_fee(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Fee, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Swap_fee(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Swap",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Swap_timestamp(ctx context.Context, field graphql.CollectedField, obj *model.Swap) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Swap_timestamp(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Timestamp, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Swap_timestamp(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Swap",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4491,59 +7169,20 @@ func (ec *executionContext) unmarshalInputIncentiveAssetWhere(ctx context.Contex
 
 	for k, v := range asMap {
 		switch k {
-		case "id":
+		case "amount":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			data, err := ec.unmarshalOObjectID2ᚖgoᚗmongodbᚗorgᚋmongoᚑdriverᚋbsonᚋprimitiveᚐObjectID(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amount"))
+			it.Amount, err = ec.unmarshalOInt2ᚖint64(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			if err = ec.resolvers.IncentiveAssetWhere().ID(ctx, &it, data); err != nil {
-				return it, err
-			}
-		case "height":
+		case "denom":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("height"))
-			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("denom"))
+			it.Denom, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
-				return it, err
-			}
-			if err = ec.resolvers.IncentiveAssetWhere().Height(ctx, &it, data); err != nil {
-				return it, err
-			}
-		case "receiver":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("receiver"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			if err = ec.resolvers.IncentiveAssetWhere().Receiver(ctx, &it, data); err != nil {
-				return it, err
-			}
-		case "assets":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("assets"))
-			data, err := ec.unmarshalOIncentiveAssetWhere2ᚕᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐIncentiveAssetWhere(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			if err = ec.resolvers.IncentiveAssetWhere().Assets(ctx, &it, data); err != nil {
-				return it, err
-			}
-		case "timestamp":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timestamp"))
-			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			if err = ec.resolvers.IncentiveAssetWhere().Timestamp(ctx, &it, data); err != nil {
 				return it, err
 			}
 		}
@@ -4561,26 +7200,44 @@ func (ec *executionContext) unmarshalInputIncentiveWhere(ctx context.Context, ob
 
 	for k, v := range asMap {
 		switch k {
-		case "amount":
+		case "id":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amount"))
-			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalOObjectID2ᚖgoᚗmongodbᚗorgᚋmongoᚑdriverᚋbsonᚋprimitiveᚐObjectID(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			if err = ec.resolvers.IncentiveWhere().Amount(ctx, &it, data); err != nil {
-				return it, err
-			}
-		case "denom":
+		case "height":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("denom"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("height"))
+			it.Height, err = ec.unmarshalOInt2ᚖint64(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			if err = ec.resolvers.IncentiveWhere().Denom(ctx, &it, data); err != nil {
+		case "assets":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("assets"))
+			it.Assets, err = ec.unmarshalOIncentiveAssetWhere2ᚖᚕgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐIncentiveAssetWhere(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "receiver":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("receiver"))
+			it.Receiver, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "timestamp":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timestamp"))
+			it.Timestamp, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
 				return it, err
 			}
 		}
@@ -4591,6 +7248,335 @@ func (ec *executionContext) unmarshalInputIncentiveWhere(ctx context.Context, ob
 
 func (ec *executionContext) unmarshalInputIncentiveWhereUnique(ctx context.Context, obj interface{}) (model.IncentiveWhereUnique, error) {
 	var it model.IncentiveWhereUnique
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNObjectID2goᚗmongodbᚗorgᚋmongoᚑdriverᚋbsonᚋprimitiveᚐObjectID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputMessageWhere(ctx context.Context, obj interface{}) (model.MessageWhere, error) {
+	var it model.MessageWhere
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalOObjectID2ᚖgoᚗmongodbᚗorgᚋmongoᚑdriverᚋbsonᚋprimitiveᚐObjectID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "height":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("height"))
+			it.Height, err = ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tx_hash":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tx_hash"))
+			it.TxHash, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "msg_index":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("msg_index"))
+			it.MsgIndex, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "msg_type":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("msg_type"))
+			it.MsgType, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "signer":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("signer"))
+			it.Signer, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "timestamp":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timestamp"))
+			it.Timestamp, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputMessageWhereUnique(ctx context.Context, obj interface{}) (model.MessageWhereUnique, error) {
+	var it model.MessageWhereUnique
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNObjectID2goᚗmongodbᚗorgᚋmongoᚑdriverᚋbsonᚋprimitiveᚐObjectID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputPoolAssetWhere(ctx context.Context, obj interface{}) (model.PoolAssetWhere, error) {
+	var it model.PoolAssetWhere
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "token":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
+			it.Token, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "weight":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("weight"))
+			it.Weight, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputPoolWhere(ctx context.Context, obj interface{}) (model.PoolWhere, error) {
+	var it model.PoolWhere
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalOObjectID2ᚖgoᚗmongodbᚗorgᚋmongoᚑdriverᚋbsonᚋprimitiveᚐObjectID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "height":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("height"))
+			it.Height, err = ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tx_hash":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tx_hash"))
+			it.TxHash, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "msg_index":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("msg_index"))
+			it.MsgIndex, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "pool_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pool_id"))
+			it.PoolID, err = ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "pool_assets":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pool_assets"))
+			it.PoolAssets, err = ec.unmarshalOPoolAssetWhere2ᚖᚕgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPoolAssetWhere(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputPoolWhereUnique(ctx context.Context, obj interface{}) (model.PoolWhereUnique, error) {
+	var it model.PoolWhereUnique
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNObjectID2goᚗmongodbᚗorgᚋmongoᚑdriverᚋbsonᚋprimitiveᚐObjectID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSwapWhere(ctx context.Context, obj interface{}) (model.SwapWhere, error) {
+	var it model.SwapWhere
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalOObjectID2ᚖgoᚗmongodbᚗorgᚋmongoᚑdriverᚋbsonᚋprimitiveᚐObjectID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "height":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("height"))
+			it.Height, err = ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tx_hash":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tx_hash"))
+			it.TxHash, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "msg_index":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("msg_index"))
+			it.MsgIndex, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "pool_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pool_id"))
+			it.PoolId, err = ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tokens_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tokens_in"))
+			it.TokensIn, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tokens_out":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tokens_out"))
+			it.TokensOut, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "account":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("account"))
+			it.Account, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "fee":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fee"))
+			it.Fee, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "timestamp":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timestamp"))
+			it.Timestamp, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSwapWhereUnique(ctx context.Context, obj interface{}) (model.SwapWhereUnique, error) {
+	var it model.SwapWhereUnique
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
@@ -4866,6 +7852,199 @@ func (ec *executionContext) _IncentiveAsset(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var messageImplementors = []string{"Message"}
+
+func (ec *executionContext) _Message(ctx context.Context, sel ast.SelectionSet, obj *model.Message) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, messageImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Message")
+		case "id":
+
+			out.Values[i] = ec._Message_id(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "height":
+
+			out.Values[i] = ec._Message_height(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "tx_hash":
+
+			out.Values[i] = ec._Message_tx_hash(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "msg_index":
+
+			out.Values[i] = ec._Message_msg_index(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "msg_type":
+
+			out.Values[i] = ec._Message_msg_type(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "signer":
+
+			out.Values[i] = ec._Message_signer(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "timestamp":
+
+			out.Values[i] = ec._Message_timestamp(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var poolImplementors = []string{"Pool"}
+
+func (ec *executionContext) _Pool(ctx context.Context, sel ast.SelectionSet, obj *model.Pool) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, poolImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Pool")
+		case "id":
+
+			out.Values[i] = ec._Pool_id(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "height":
+
+			out.Values[i] = ec._Pool_height(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "tx_hash":
+
+			out.Values[i] = ec._Pool_tx_hash(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "msg_index":
+
+			out.Values[i] = ec._Pool_msg_index(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "pool_id":
+
+			out.Values[i] = ec._Pool_pool_id(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "pool_assets":
+
+			out.Values[i] = ec._Pool_pool_assets(ctx, field, obj)
+
+		case "swap_fee":
+
+			out.Values[i] = ec._Pool_swap_fee(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "exit_fee":
+
+			out.Values[i] = ec._Pool_exit_fee(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "sender":
+
+			out.Values[i] = ec._Pool_sender(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "timestamp":
+
+			out.Values[i] = ec._Pool_timestamp(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var poolAssetImplementors = []string{"PoolAsset"}
+
+func (ec *executionContext) _PoolAsset(ctx context.Context, sel ast.SelectionSet, obj *model.PoolAsset) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, poolAssetImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PoolAsset")
+		case "token":
+
+			out.Values[i] = ec._PoolAsset_token(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "weight":
+
+			out.Values[i] = ec._PoolAsset_weight(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -4938,6 +8117,69 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_transactionCount(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "message":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_message(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "messages":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_messages(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "messageCount":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_messageCount(ctx, field)
 				return res
 			}
 
@@ -5074,6 +8316,132 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
+		case "swap":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_swap(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "swaps":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_swaps(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "swapCount":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_swapCount(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "pool":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_pool(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "pools":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_pools(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "poolCount":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_poolCount(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
 		case "__type":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
@@ -5086,6 +8454,97 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				return ec._Query___schema(ctx, field)
 			})
 
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var swapImplementors = []string{"Swap"}
+
+func (ec *executionContext) _Swap(ctx context.Context, sel ast.SelectionSet, obj *model.Swap) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, swapImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Swap")
+		case "id":
+
+			out.Values[i] = ec._Swap_id(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "height":
+
+			out.Values[i] = ec._Swap_height(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "tx_hash":
+
+			out.Values[i] = ec._Swap_tx_hash(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "msg_index":
+
+			out.Values[i] = ec._Swap_msg_index(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "pool_id":
+
+			out.Values[i] = ec._Swap_pool_id(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "tokens_in":
+
+			out.Values[i] = ec._Swap_tokens_in(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "tokens_out":
+
+			out.Values[i] = ec._Swap_tokens_out(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "account":
+
+			out.Values[i] = ec._Swap_account(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "fee":
+
+			out.Values[i] = ec._Swap_fee(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "timestamp":
+
+			out.Values[i] = ec._Swap_timestamp(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5579,6 +9038,21 @@ func (ec *executionContext) marshalNIncentive2ᚕᚖgithubᚗcomᚋangelorcᚋsi
 	return ret
 }
 
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNInt2int64(ctx context.Context, v interface{}) (int64, error) {
 	res, err := graphql.UnmarshalInt64(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -5592,6 +9066,44 @@ func (ec *executionContext) marshalNInt2int64(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNMessage2ᚕᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐMessage(ctx context.Context, sel ast.SelectionSet, v []*model.Message) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOMessage2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐMessage(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNObjectID2goᚗmongodbᚗorgᚋmongoᚑdriverᚋbsonᚋprimitiveᚐObjectID(ctx context.Context, v interface{}) (primitive.ObjectID, error) {
@@ -5609,6 +9121,44 @@ func (ec *executionContext) marshalNObjectID2goᚗmongodbᚗorgᚋmongoᚑdriver
 	return res
 }
 
+func (ec *executionContext) marshalNPool2ᚕᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPool(ctx context.Context, sel ast.SelectionSet, v []*model.Pool) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOPool2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPool(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -5622,6 +9172,44 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNSwap2ᚕᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐSwap(ctx context.Context, sel ast.SelectionSet, v []*model.Swap) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOSwap2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐSwap(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {
@@ -6040,7 +9628,12 @@ func (ec *executionContext) marshalOIncentiveAsset2ᚕgithubᚗcomᚋangelorcᚋ
 	return ret
 }
 
-func (ec *executionContext) unmarshalOIncentiveAssetWhere2ᚕᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐIncentiveAssetWhere(ctx context.Context, v interface{}) ([]*model.IncentiveAssetWhere, error) {
+func (ec *executionContext) unmarshalOIncentiveAssetWhere2githubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐIncentiveAssetWhere(ctx context.Context, v interface{}) (model.IncentiveAssetWhere, error) {
+	res, err := ec.unmarshalInputIncentiveAssetWhere(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOIncentiveAssetWhere2ᚕgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐIncentiveAssetWhere(ctx context.Context, v interface{}) ([]model.IncentiveAssetWhere, error) {
 	if v == nil {
 		return nil, nil
 	}
@@ -6049,10 +9642,10 @@ func (ec *executionContext) unmarshalOIncentiveAssetWhere2ᚕᚖgithubᚗcomᚋa
 		vSlice = graphql.CoerceList(v)
 	}
 	var err error
-	res := make([]*model.IncentiveAssetWhere, len(vSlice))
+	res := make([]model.IncentiveAssetWhere, len(vSlice))
 	for i := range vSlice {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalOIncentiveAssetWhere2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐIncentiveAssetWhere(ctx, vSlice[i])
+		res[i], err = ec.unmarshalOIncentiveAssetWhere2githubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐIncentiveAssetWhere(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
 		}
@@ -6060,11 +9653,11 @@ func (ec *executionContext) unmarshalOIncentiveAssetWhere2ᚕᚖgithubᚗcomᚋa
 	return res, nil
 }
 
-func (ec *executionContext) unmarshalOIncentiveAssetWhere2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐIncentiveAssetWhere(ctx context.Context, v interface{}) (*model.IncentiveAssetWhere, error) {
+func (ec *executionContext) unmarshalOIncentiveAssetWhere2ᚖᚕgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐIncentiveAssetWhere(ctx context.Context, v interface{}) (*[]model.IncentiveAssetWhere, error) {
 	if v == nil {
 		return nil, nil
 	}
-	res, err := ec.unmarshalInputIncentiveAssetWhere(ctx, v)
+	res, err := ec.unmarshalOIncentiveAssetWhere2ᚕgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐIncentiveAssetWhere(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -6129,6 +9722,54 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	return res
 }
 
+func (ec *executionContext) unmarshalOInt2ᚖint64(ctx context.Context, v interface{}) (*int64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt64(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint64(ctx context.Context, sel ast.SelectionSet, v *int64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalInt64(*v)
+	return res
+}
+
+func (ec *executionContext) marshalOMessage2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐMessage(ctx context.Context, sel ast.SelectionSet, v *model.Message) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Message(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOMessageOrderByENUM2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐMessageOrderByENUM(ctx context.Context, v interface{}) (*model.MessageOrderByENUM, error) {
+	if v == nil {
+		return nil, nil
+	}
+	tmp, err := graphql.UnmarshalString(v)
+	res := model.MessageOrderByENUM(tmp)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOMessageOrderByENUM2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐMessageOrderByENUM(ctx context.Context, sel ast.SelectionSet, v *model.MessageOrderByENUM) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalString(string(*v))
+	return res
+}
+
+func (ec *executionContext) unmarshalOMessageWhere2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐMessageWhere(ctx context.Context, v interface{}) (*model.MessageWhere, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputMessageWhere(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOObjectID2ᚕᚖgoᚗmongodbᚗorgᚋmongoᚑdriverᚋbsonᚋprimitiveᚐObjectID(ctx context.Context, v interface{}) ([]*primitive.ObjectID, error) {
 	if v == nil {
 		return nil, nil
@@ -6175,6 +9816,116 @@ func (ec *executionContext) marshalOObjectID2ᚖgoᚗmongodbᚗorgᚋmongoᚑdri
 	}
 	res := scalar.MarshalObjectIDScalar(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOPool2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPool(ctx context.Context, sel ast.SelectionSet, v *model.Pool) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Pool(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOPoolAsset2githubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPoolAsset(ctx context.Context, sel ast.SelectionSet, v model.PoolAsset) graphql.Marshaler {
+	return ec._PoolAsset(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOPoolAsset2ᚕgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPoolAsset(ctx context.Context, sel ast.SelectionSet, v []model.PoolAsset) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOPoolAsset2githubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPoolAsset(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOPoolAssetWhere2githubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPoolAssetWhere(ctx context.Context, v interface{}) (model.PoolAssetWhere, error) {
+	res, err := ec.unmarshalInputPoolAssetWhere(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOPoolAssetWhere2ᚕgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPoolAssetWhere(ctx context.Context, v interface{}) ([]model.PoolAssetWhere, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]model.PoolAssetWhere, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalOPoolAssetWhere2githubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPoolAssetWhere(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOPoolAssetWhere2ᚖᚕgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPoolAssetWhere(ctx context.Context, v interface{}) (*[]model.PoolAssetWhere, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOPoolAssetWhere2ᚕgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPoolAssetWhere(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOPoolOrderByENUM2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPoolOrderByENUM(ctx context.Context, v interface{}) (*model.PoolOrderByENUM, error) {
+	if v == nil {
+		return nil, nil
+	}
+	tmp, err := graphql.UnmarshalString(v)
+	res := model.PoolOrderByENUM(tmp)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOPoolOrderByENUM2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPoolOrderByENUM(ctx context.Context, sel ast.SelectionSet, v *model.PoolOrderByENUM) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalString(string(*v))
+	return res
+}
+
+func (ec *executionContext) unmarshalOPoolWhere2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐPoolWhere(ctx context.Context, v interface{}) (*model.PoolWhere, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputPoolWhere(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
@@ -6239,6 +9990,38 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	}
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOSwap2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐSwap(ctx context.Context, sel ast.SelectionSet, v *model.Swap) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Swap(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOSwapOrderByENUM2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐSwapOrderByENUM(ctx context.Context, v interface{}) (*model.SwapOrderByENUM, error) {
+	if v == nil {
+		return nil, nil
+	}
+	tmp, err := graphql.UnmarshalString(v)
+	res := model.SwapOrderByENUM(tmp)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOSwapOrderByENUM2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐSwapOrderByENUM(ctx context.Context, sel ast.SelectionSet, v *model.SwapOrderByENUM) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalString(string(*v))
+	return res
+}
+
+func (ec *executionContext) unmarshalOSwapWhere2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐSwapWhere(ctx context.Context, v interface{}) (*model.SwapWhere, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputSwapWhere(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOTime2ᚖtimeᚐTime(ctx context.Context, v interface{}) (*time.Time, error) {

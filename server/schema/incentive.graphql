@@ -32,14 +32,14 @@ input IncentiveWhereUnique @goModel(model: "github.com/angelorc/sinfonia-go/mong
 }
 
 input IncentiveWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.IncentiveWhere") {
-    amount: Int
-    denom: String
+    id: ObjectID
+    height: Int
+    assets: [IncentiveAssetWhere]
+    receiver: String
+    timestamp: Time
 }
 
 input IncentiveAssetWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.IncentiveAssetWhere") {
-    id: ObjectID
-    height: Int
-    receiver: String
-    assets: [IncentiveAssetWhere]
-    timestamp: Time
+    amount: Int
+    denom: String
 }

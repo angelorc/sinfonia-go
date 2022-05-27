@@ -1,0 +1,49 @@
+# MODEL
+##########
+
+type Swap @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Swap") {
+    id: ObjectID!
+    height: Int!
+    tx_hash: String!
+    msg_index: Int!
+
+    pool_id: Int!
+    tokens_in: String!
+    tokens_out: String!
+    account: String!
+    fee: String!
+
+    timestamp: Time!
+}
+
+# ENUM
+##########
+enum SwapOrderByENUM @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.SwapOrderByENUM") {
+    timestamp_ASC
+    timestamp_DESC
+    height_ASC
+    height_DESC
+}
+
+# DTO
+##########
+
+# Read
+input SwapWhereUnique @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.SwapWhereUnique") {
+    id: ObjectID!
+}
+
+input SwapWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.SwapWhere") {
+    id: ObjectID
+    height: Int
+    tx_hash: String
+    msg_index: Int
+
+    pool_id: Int
+    tokens_in: String
+    tokens_out: String
+    account: String
+    fee: String
+
+    timestamp: Time
+}
