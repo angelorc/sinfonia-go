@@ -5,6 +5,7 @@ use (
 	./config
 	./mongo
 	./osmosis
+	./server
 	./tendermint
 	./utility
 )

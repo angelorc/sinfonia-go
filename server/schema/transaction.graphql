@@ -1,0 +1,42 @@
+# MODEL
+##########
+
+type Transaction @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Transaction") {
+    id: ObjectID!
+    height: Int!
+    hash: String!
+    code: Int
+    log: String
+    fee_amount: String
+    fee_denom: String
+    gas_used: Int
+    gas_wanted: Int
+    timestamp: Time!
+}
+
+# ENUM
+##########
+enum TransactionOrderByENUM @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.TransactionOrderByENUM") {
+    timestamp_ASC
+    timestamp_DESC
+}
+
+# DTO
+##########
+
+# Read
+input TransactionWhereUnique @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.TransactionWhereUnique") {
+    id: ObjectID!
+}
+
+input TransactionWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.TransactionWhere") {
+    id: ObjectID
+    height: Int
+    hash: String
+    code: Int
+    log: String
+    fee_amount: String
+    fee_denom: String
+    gas_used: Int
+    gas_wanted: Int
+}

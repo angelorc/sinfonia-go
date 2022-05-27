@@ -1,0 +1,44 @@
+# DIRECTIVE
+##########
+directive @goModel(model: String, models: [String!]) on OBJECT
+    | INPUT_OBJECT
+    | SCALAR
+    | ENUM
+    | INTERFACE
+    | UNION
+
+directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION
+    | FIELD_DEFINITION
+
+
+# SCALAR
+##########
+scalar Time
+scalar ObjectID @goModel(model: "github.com/angelorc/sinfonia-go/server/scalar.ObjectIDScalar")
+scalar Json @goModel(model: "github.com/angelorc/sinfonia-go/server/scalar.JSONScalar")
+
+# QUERY
+##########
+type Query {
+    # Transaction
+    ##########
+    transaction(
+        where: TransactionWhere
+        search: String
+    ): Transaction
+
+    transactions(
+        where: TransactionWhere
+        "search in : [hash]"
+        search: String
+        in: [ObjectID]
+        orderBy: TransactionOrderByENUM
+        skip: Int
+        limit: Int
+    ): [Transaction]!
+
+    transactionCount(
+        where: TransactionWhere
+        search: String
+    ): Int
+}
