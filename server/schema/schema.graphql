@@ -24,13 +24,10 @@ type Query {
     ##########
     transaction(
         where: TransactionWhere
-        search: String
     ): Transaction
 
     transactions(
         where: TransactionWhere
-        "search in : [hash]"
-        search: String
         in: [ObjectID]
         orderBy: TransactionOrderByENUM
         skip: Int
@@ -40,5 +37,41 @@ type Query {
     transactionCount(
         where: TransactionWhere
         search: String
+    ): Int
+
+    # Account
+    ##########
+    account(
+        where: AccountWhere
+    ): Account
+
+    accounts(
+        where: AccountWhere
+        in: [ObjectID]
+        orderBy: AccountOrderByENUM
+        skip: Int
+        limit: Int
+    ): [Account]!
+
+    accountCount(
+        where: AccountWhere
+    ): Int
+
+    # Incentive
+    ##########
+    incentive(
+        where: IncentiveWhere
+    ): Incentive
+
+    incentives(
+        where: IncentiveWhere
+        in: [ObjectID]
+        orderBy: IncentiveOrderByENUM
+        skip: Int
+        limit: Int
+    ): [Incentive]!
+
+    incentiveCount(
+        where: IncentiveWhere
     ): Int
 }

@@ -1,0 +1,45 @@
+# MODEL
+##########
+
+type Incentive @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Incentive") {
+    id: ObjectID!
+    height: Int!
+    receiver: String!
+    assets: [IncentiveAsset]
+    timestamp: Time!
+}
+
+type IncentiveAsset @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.IncentiveAsset") {
+    amount: Int
+    denom: String
+}
+
+# ENUM
+##########
+enum IncentiveOrderByENUM @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.IncentiveOrderByENUM") {
+    timestamp_ASC
+    timestamp_DESC
+    height_ASC
+    height_DESC
+}
+
+# DTO
+##########
+
+# Read
+input IncentiveWhereUnique @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.IncentiveWhereUnique") {
+    id: ObjectID!
+}
+
+input IncentiveWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.IncentiveWhere") {
+    amount: Int
+    denom: String
+}
+
+input IncentiveAssetWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.IncentiveAssetWhere") {
+    id: ObjectID
+    height: Int
+    receiver: String
+    assets: [IncentiveAssetWhere]
+    timestamp: Time
+}

@@ -20,7 +20,7 @@ func Start() {
 	e.HideBanner = true
 
 	// Load routes from graphql
-	//InitGraphql(e)
+	InitGraphql(e)
 
 	// Load routes from rest
 	InitRest(e)

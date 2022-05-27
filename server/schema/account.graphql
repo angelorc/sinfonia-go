@@ -1,0 +1,31 @@
+# MODEL
+##########
+
+type Account @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Account") {
+    id: ObjectID!
+    address: String!
+    value_swapped: String
+    fees_paid: String
+    total_txs: String
+    first_seen: Time!
+}
+
+# ENUM
+##########
+enum AccountOrderByENUM @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.AccountOrderByENUM") {
+    first_seen_ASC
+    first_seen_DESC
+}
+
+# DTO
+##########
+
+# Read
+input AccountWhereUnique @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.AccountWhereUnique") {
+    id: ObjectID!
+}
+
+input AccountWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.AccountWhere") {
+    id: ObjectID
+    address: String
+}

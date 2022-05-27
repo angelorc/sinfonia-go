@@ -38,12 +38,12 @@ type Incentive struct {
 }
 
 type IncentiveAsset struct {
-	Amount uint64 `json:"amount" bson:"amount"`
+	Amount int64  `json:"amount" bson:"amount"`
 	Denom  string `json:"denom" bson:"denom"`
 }
 
 type IncentiveAssetWhere struct {
-	Amount *uint64 `json:"amount,omitempty" bson:"amount,omitempty"`
+	Amount *int64  `json:"amount,omitempty" bson:"amount,omitempty"`
 	Denom  *string `json:"denom,omitempty" bson:"denom,omitempty"`
 }
 

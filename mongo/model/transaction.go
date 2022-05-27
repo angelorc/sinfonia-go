@@ -33,7 +33,7 @@ type Transaction struct {
 	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	Height    int64              `json:"height,omitempty" bson:"height,omitempty" validate:"required"`
 	Hash      string             `json:"hash" bson:"hash" validate:"required"`
-	Code      uint32             `json:"code" bson:"code"`
+	Code      int                `json:"code" bson:"code"`
 	Log       string             `json:"log" bson:"log" validate:"required"`
 	FeeAmount string             `json:"fee_amount" bson:"fee_amount"`
 	FeeDenom  string             `json:"fee_denom" bson:"fee_denom"`
@@ -62,7 +62,7 @@ type TransactionWhere struct {
 	ID        *primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	Height    int64               `json:"height,omitempty" bson:"height,omitempty"`
 	Hash      *string             `json:"hash,omitempty" bson:"hash,omitempty"`
-	Code      uint32              `json:"code,omitempty" bson:"code,omitempty"`
+	Code      int                 `json:"code,omitempty" bson:"code,omitempty"`
 	Log       *string             `json:"log,omitempty" bson:"log,omitempty"`
 	FeeAmount *string             `json:"fee_amount,omitempty" bson:"fee_amount,omitempty"`
 	FeeDenom  *string             `json:"fee_denom,omitempty" bson:"fee_denom,omitempty"`

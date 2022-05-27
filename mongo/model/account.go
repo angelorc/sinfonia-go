@@ -55,7 +55,7 @@ type AccountWhereUnique struct {
 
 type AccountWhere struct {
 	ID      *primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Address string              `json:"address" bson:"address"`
+	Address *string             `json:"address,omitempty" bson:"address,omitempty"`
 	OR      []bson.M            `json:"$or,omitempty" bson:"$or,omitempty"`
 }
 
@@ -73,7 +73,7 @@ type AccountCreate struct {
 
 // Read
 
-func (m *Account) Account(filter *AccountWhere) error {
+func (m *Account) One(filter *AccountWhere) error {
 	collection := db.GetCollection(DB_COLLECTION_NAME__ACCOUNT, DB_REF_NAME__ACCOUNT)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
