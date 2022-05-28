@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"github.com/angelorc/sinfonia-go/mongo/db"
 	"github.com/angelorc/sinfonia-go/utility"
@@ -20,12 +21,6 @@ const DB_COLLECTION_NAME__TRANSACTION = "transactions"
 const DB_REF_NAME__TRANSACTION = "default"
 
 /**
- * SEARCH regex fields
- */
-
-var SEARCH_FILEDS__TRANSACTION = []string{"hash", "height"}
-
-/**
  * MODEL
  */
 
@@ -33,7 +28,7 @@ type Transaction struct {
 	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	Height    int64              `json:"height,omitempty" bson:"height,omitempty" validate:"required"`
 	Hash      string             `json:"hash" bson:"hash" validate:"required"`
-	Code      int                `json:"code" bson:"code"`
+	Code      int                `json:"code" bson:"code"  validate:"required"`
 	Log       string             `json:"log" bson:"log" validate:"required"`
 	FeeAmount string             `json:"fee_amount" bson:"fee_amount"`
 	FeeDenom  string             `json:"fee_denom" bson:"fee_denom"`
@@ -257,6 +252,43 @@ func (t *Transaction) Delete() error {
 
 	_, err := collection.DeleteOne(ctx, bson.M{"_id": t.ID})
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/**
+ * INDEXER API
+ */
+
+func (t *Transaction) InsertTx(hash []byte, log, feeAmount, feeDenom string, height, gasUsed, gasWanted int64, timestamp time.Time, code uint32) error {
+	id, err := primitive.ObjectIDFromHex(hex.EncodeToString(hash[:12]))
+	if err != nil {
+		return err
+	}
+
+	hashStr := hex.EncodeToString(hash)
+
+	item := Transaction{}
+	data := TransactionCreate{
+		ID:        &id,
+		Height:    height,
+		Hash:      &hashStr,
+		Code:      code,
+		Log:       &log,
+		FeeAmount: &feeAmount,
+		FeeDenom:  &feeDenom,
+		GasUsed:   gasUsed,
+		GasWanted: gasWanted,
+		Timestamp: timestamp,
+	}
+
+	if err := utility.ValidateStruct(data); err != nil {
+		return err
+	}
+
+	if err := item.Create(&data); err != nil {
 		return err
 	}
 
