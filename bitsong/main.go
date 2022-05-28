@@ -26,5 +26,5 @@ func main() {
 		log.Fatalf("failed to get RPC endpoints on chain %s. err: %v", "bitsong", err)
 	}
 
-	indexer.NewIndexer(client).Start(1, 1000, 10)
+	indexer.NewIndexer(client).Parse(1, 1000, 10)
 }

@@ -22,49 +22,35 @@ var (
 	RtyErr    = retry.LastErrorOnly(true)
 )
 
+type IndexModules struct {
+	Blocks           bool
+	Transactions     bool
+	Messages         bool
+	BeginBlockEvents bool
+}
+
 type Indexer struct {
-	client *chain.Client
+	client  *chain.Client
+	modules *IndexModules
 }
 
 func NewIndexer(client *chain.Client) *Indexer {
 	return &Indexer{client: client}
 }
 
-func (i *Indexer) Start(startHeight, endHeight int64, concurrent int) {
+func (i *Indexer) Parse(fromBlock, toBlock int64, concurrent int, modules *IndexModules) {
 	var blocks []int64
-	for i := startHeight; i <= endHeight; i++ {
+	for i := fromBlock; i <= toBlock; i++ {
 		blocks = append(blocks, i)
 	}
 
-	if err := i.parseBlocks(blocks, concurrent, i.IndexTransactions); err != nil {
-		log.Fatalf("failed to index blocks. err: %v", err)
-	}
-}
+	i.modules = modules
 
-func (i *Indexer) IndexTransactions(height int64) error {
-	fmt.Println(fmt.Sprintf("Index transactions on block %d", height))
-
-	block, err := i.client.QueryBlock(context.Background(), &height)
-	if err != nil {
-		if err = retry.Do(func() error {
-			block, err = i.client.QueryBlock(context.Background(), &height)
-			if err != nil {
-				return err
-			}
-
-			return nil
-		}, RtyAtt, RtyDel, RtyErr, retry.DelayType(retry.BackOffDelay), retry.OnRetry(func(n uint, err error) {
-			log.Fatalf("retry: attempt %d, height %d, err: %v", n, height, err)
-		})); err != nil {
-			return err
+	if i.modules.Blocks {
+		if err := i.parseBlocks(blocks, concurrent, i.IndexTransactions); err != nil {
+			log.Fatalf("failed to index blocks. err: %v", err)
 		}
 	}
-
-	if block != nil {
-		i.parseTxs(block.Block.Height, block.Block.Data.Txs, block.Block.Time)
-	}
-
-	return nil
 }
 
 func (i *Indexer) parseBlocks(blocks []int64, concurrent int, cb func(height int64) error) error {
@@ -108,6 +94,34 @@ func (i *Indexer) parseBlocks(blocks []int64, concurrent int, cb func(height int
 	return nil
 }
 
+func (i *Indexer) IndexTransactions(height int64) error {
+	fmt.Println(fmt.Sprintf("Index transactions on block %d", height))
+
+	block, err := i.client.QueryBlock(context.Background(), &height)
+	if err != nil {
+		if err = retry.Do(func() error {
+			block, err = i.client.QueryBlock(context.Background(), &height)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}, RtyAtt, RtyDel, RtyErr, retry.DelayType(retry.BackOffDelay), retry.OnRetry(func(n uint, err error) {
+			log.Fatalf("retry: attempt %d, height %d, err: %v", n, height, err)
+		})); err != nil {
+			return err
+		}
+	}
+
+	if block != nil {
+		if i.modules.Transactions {
+			i.parseTxs(block.Block.Height, block.Block.Data.Txs, block.Block.Time)
+		}
+	}
+
+	return nil
+}
+
 func (i *Indexer) parseTxs(height int64, txs tmtypes.Txs, ts time.Time) {
 	for index, tx := range txs {
 		sdkTx, err := i.client.DecodeTx(tx)
@@ -139,8 +153,10 @@ func (i *Indexer) parseTxs(height int64, txs tmtypes.Txs, ts time.Time) {
 			log.Printf("[Height %d] {%d/%d txs} - Successfuly wrote tx to db with %d msgs.", height, index+1, len(txs), len(sdkTx.GetMsgs()))
 		}
 
-		for msgIndex, msg := range sdkTx.GetMsgs() {
-			i.HandleMsg(msg, msgIndex, height, tx.Hash(), ts)
+		if i.modules.Messages {
+			for msgIndex, msg := range sdkTx.GetMsgs() {
+				i.HandleMsg(msg, msgIndex, height, tx.Hash(), ts)
+			}
 		}
 	}
 }
