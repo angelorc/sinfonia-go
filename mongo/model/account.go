@@ -172,3 +172,25 @@ func (m *Account) Create(data *AccountCreate) error {
 
 	return nil
 }
+
+/**
+ * INDEXER API
+ */
+
+func InsertAccount(acc string, firstSeen time.Time) error {
+	item := Account{}
+	data := AccountCreate{
+		Address:   acc,
+		FirstSeen: firstSeen,
+	}
+
+	if err := utility.ValidateStruct(data); err != nil {
+		return err
+	}
+
+	if err := item.Create(&data); err != nil {
+		return err
+	}
+
+	return nil
+}

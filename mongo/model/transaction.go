@@ -17,8 +17,10 @@ import (
  * DB Info
  */
 
-const DB_COLLECTION_NAME__TRANSACTION = "transactions"
-const DB_REF_NAME__TRANSACTION = "default"
+const (
+	DB_COLLECTION_NAME__TRANSACTION = "transactions"
+	DB_REF_NAME__TRANSACTION        = "default"
+)
 
 /**
  * MODEL
@@ -26,14 +28,13 @@ const DB_REF_NAME__TRANSACTION = "default"
 
 type Transaction struct {
 	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	ChainID   string             `json:"chain_id" bson:"chain_id" validate:"required"`
 	Height    int64              `json:"height,omitempty" bson:"height,omitempty" validate:"required"`
 	Hash      string             `json:"hash" bson:"hash" validate:"required"`
 	Code      int                `json:"code" bson:"code"  validate:"required"`
-	Log       string             `json:"log" bson:"log" validate:"required"`
-	FeeAmount string             `json:"fee_amount" bson:"fee_amount"`
-	FeeDenom  string             `json:"fee_denom" bson:"fee_denom"`
-	GasUsed   int64              `json:"gas_used" bson:"gas_used"`
-	GasWanted int64              `json:"gas_wanted" bson:"gas_wanted"`
+	Log       interface{}        `json:"log" bson:"log" validate:"required"`
+	Fee       Fee                `json:"fee" bson:"fee"`
+	Gas       Gas                `json:"gas" bson:"gas"`
 	Timestamp time.Time          `json:"timestamp,omitempty" bson:"timestamp,omitempty" validate:"required"`
 }
 
@@ -48,10 +49,6 @@ type TransactionOrderByENUM string
  */
 
 // Read
-
-type TransactionWhereUnique struct {
-	ID primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-}
 
 type TransactionWhere struct {
 	ID        *primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
@@ -71,20 +68,14 @@ type TransactionWhere struct {
 
 type TransactionCreate struct {
 	ID        *primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	ChainID   *string             `json:"chain_id" bson:"chain_id" validate:"required"`
 	Height    int64               `json:"height,omitempty" bson:"height,omitempty" validate:"required"`
 	Hash      *string             `json:"hash" bson:"hash,omitempty" validate:"required"`
-	Code      uint32              `json:"code,omitempty" bson:"code,omitempty"`
-	Log       *string             `json:"log" bson:"log" validate:"required"`
-	FeeAmount *string             `json:"fee_amount,omitempty" bson:"fee_amount,omitempty"`
-	FeeDenom  *string             `json:"fee_denom,omitempty" bson:"fee_denom,omitempty"`
-	GasUsed   int64               `json:"gas_used,omitempty" bson:"gas_used,omitempty"`
-	GasWanted int64               `json:"gas_wanted,omitempty" bson:"gas_wanted,omitempty"`
+	Code      uint32              `json:"code" bson:"code"`
+	Log       interface{}         `json:"log" bson:"log" validate:"required"`
+	Fee       *Fee                `json:"fee,omitempty" bson:"fee,omitempty"`
+	Gas       *Gas                `json:"gas,omitempty" bson:"gas,omitempty"`
 	Timestamp time.Time           `json:"timestamp,omitempty" bson:"timestamp,omitempty" validate:"required"`
-}
-
-type TransactionUpdate struct {
-	Hash      *string   `json:"hash" bson:"hash,omitempty"`
-	Timestamp time.Time `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
 }
 
 /**
@@ -102,7 +93,6 @@ func (t *Transaction) One(filter *TransactionWhere) error {
 
 	return nil
 }
-
 func (t *Transaction) List(filter *TransactionWhere, orderBy *TransactionOrderByENUM, skip *int, limit *int, customQuery *bson.M) ([]*Transaction, error) {
 	var items []*Transaction
 	orderByKey := "timestamp"
@@ -142,7 +132,6 @@ func (t *Transaction) List(filter *TransactionWhere, orderBy *TransactionOrderBy
 
 	return items, nil
 }
-
 func (t *Transaction) Count(filter *TransactionWhere) (int, error) {
 	collection := db.GetCollection(DB_COLLECTION_NAME__TRANSACTION, DB_REF_NAME__TRANSACTION)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -194,101 +183,25 @@ func (t *Transaction) Create(data *TransactionCreate) error {
 	return nil
 }
 
-func (t *Transaction) Update(where primitive.ObjectID, data *TransactionUpdate) error {
-	// validate
-	if utility.IsZeroVal(where) {
-		return errors.New("internal server error")
-	}
-	if err := utility.ValidateStruct(data); err != nil {
-		return err
-	}
-
-	// collection
-	collection := db.GetCollection(DB_COLLECTION_NAME__TRANSACTION, DB_REF_NAME__TRANSACTION)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	// check transaction is exists
-	collection.FindOne(ctx, bson.M{"_id": where}).Decode(&t)
-	if t.Hash == "" {
-		return errors.New("item not found")
-	}
-
-	// check unique
-	item := new(Transaction)
-	f := bson.M{
-		"$or": []bson.M{
-			{"hash": data.Hash, "_id": bson.M{"$ne": where}},
-		},
-	}
-	collection.FindOne(ctx, f).Decode(&item)
-	if item.Hash != "" {
-		return errors.New("transaction already exist")
-	}
-
-	// operation
-	_, err := collection.UpdateOne(ctx, bson.M{"_id": where}, bson.M{"$set": data})
-	collection.FindOne(ctx, bson.M{"_id": where}).Decode(&t)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (t *Transaction) Delete() error {
-	collection := db.GetCollection(DB_COLLECTION_NAME__TRANSACTION, DB_REF_NAME__TRANSACTION)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if utility.IsZeroVal(t.ID) {
-		return errors.New("invalid id")
-	}
-
-	collection.FindOne(ctx, bson.M{"_id": t.ID}).Decode(&t)
-	if t.Hash == "" {
-		return errors.New("item not found")
-	}
-
-	_, err := collection.DeleteOne(ctx, bson.M{"_id": t.ID})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 /**
  * INDEXER API
  */
 
-func (t *Transaction) InsertTx(hash []byte, log, feeAmount, feeDenom string, height, gasUsed, gasWanted int64, timestamp time.Time, code uint32) error {
+func TxHashToObjectID(hash []byte) primitive.ObjectID {
 	id, err := primitive.ObjectIDFromHex(hex.EncodeToString(hash[:12]))
 	if err != nil {
-		return err
+		panic(err)
 	}
 
-	hashStr := hex.EncodeToString(hash)
+	return id
+}
 
-	item := Transaction{}
-	data := TransactionCreate{
-		ID:        &id,
-		Height:    height,
-		Hash:      &hashStr,
-		Code:      code,
-		Log:       &log,
-		FeeAmount: &feeAmount,
-		FeeDenom:  &feeDenom,
-		GasUsed:   gasUsed,
-		GasWanted: gasWanted,
-		Timestamp: timestamp,
-	}
-
+func InsertTx(data *TransactionCreate) error {
 	if err := utility.ValidateStruct(data); err != nil {
 		return err
 	}
 
-	if err := item.Create(&data); err != nil {
+	if err := new(Transaction).Create(data); err != nil {
 		return err
 	}
 

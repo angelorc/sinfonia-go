@@ -2,10 +2,12 @@ package indexer
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"github.com/angelorc/sinfonia-go/mongo/model"
 	"github.com/avast/retry-go"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 	"golang.org/x/sync/errgroup"
 	"log"
 	"strings"
@@ -58,7 +60,6 @@ func (i *Indexer) Parse(fromBlock, toBlock int64) {
 		}
 	}
 }
-
 func (i *Indexer) parseBlocks(blocks []int64, concurrent int, cb func(height int64) error) error {
 	fmt.Println("starting block queries for", i.client.ChainID())
 
@@ -121,7 +122,7 @@ func (i *Indexer) IndexTransactions(height int64) error {
 
 	if block != nil {
 		if i.modules.Transactions {
-			i.parseTxs(block.Block.Height, block.Block.Data.Txs, block.Block.Time)
+			i.parseTxs(block.Block.ChainID, block.Block.Height, block.Block.Data.Txs, block.Block.Time)
 		}
 	}
 
@@ -132,6 +133,69 @@ func (i *Indexer) IndexTransactions(height int64) error {
 	}
 
 	return nil
+}
+func (i *Indexer) parseTxs(chainID string, height int64, txs tmtypes.Txs, ts time.Time) {
+	for index, tx := range txs {
+		txTx, sdkTxRes, err := i.client.QueryTx(context.Background(), tx.Hash())
+		if err != nil {
+			log.Fatalf("[Height %d] {%d/%d txs} - Failed to query tx results. Err: %s \n", height, index+1, len(txs), err.Error())
+		}
+
+		feeAmt, feeDenom := i.client.ParseTxFee(txTx.GetFee())
+
+		objID := model.TxHashToObjectID(tx.Hash())
+		hashStr := hex.EncodeToString(tx.Hash())
+		data := &model.TransactionCreate{
+			ID:      &objID,
+			ChainID: &chainID,
+			Height:  height,
+			Hash:    &hashStr,
+			Code:    sdkTxRes.Code,
+			Log:     sdkTxRes.Logs,
+			Fee: &model.Fee{
+				Amount: feeAmt,
+				Denom:  feeDenom,
+			},
+			Gas: &model.Gas{
+				Used:   sdkTxRes.GasUsed,
+				Wanted: sdkTxRes.GasWanted,
+			},
+			Timestamp: ts,
+		}
+
+		err = model.InsertTx(data)
+		if err != nil {
+			log.Fatalf("[Height %d] {%d/%d txs} - Failed to write tx to db. Err: %s", height, index+1, len(txs), err.Error())
+		}
+
+		log.Printf("[Height %d] {%d/%d txs} - Successfuly wrote tx to db with %d msgs.", height, index+1, len(txs), len(txTx.GetMsgs()))
+
+		if sdkTxRes.Code == 0 {
+			for msgIndex, msg := range txTx.GetMsgs() {
+				i.HandleMsg(msg, msgIndex, height, tx.Hash(), ts)
+			}
+
+			i.HandleLogs(sdkTxRes.Logs, txTx.GetMsgs(), height, tx.Hash(), ts)
+		}
+	}
+}
+func (i *Indexer) HandleMsg(msg sdk.Msg, msgIndex int, height int64, hash []byte, timestamp time.Time) {
+	signer := i.client.MustEncodeAccAddr(msg.GetSigners()[0])
+
+	err := model.InsertAccount(signer, timestamp)
+	if err != nil {
+		log.Fatalf("Failed to insert Account - index (%d), height (%d), err: %s", msgIndex, height, err.Error())
+	}
+
+	err = model.InsertMsg(height, hash, msgIndex, sdk.MsgTypeURL(msg), signer, timestamp)
+	if err != nil {
+		log.Fatalf("Failed to insert MsgSend - index (%d), height (%d), err: %s", msgIndex, height, err.Error())
+	}
+}
+func (i *Indexer) HandleLogs(logs sdk.ABCIMessageLogs, msgs []sdk.Msg, height int64, hash []byte, timestamp time.Time) {
+	for index, mlog := range logs {
+		i.HandleEvents(mlog.Events, msgs[index], index, height, hash, timestamp)
+	}
 }
 
 func (i *Indexer) parseBlockResults(height int64, ts time.Time) error {
@@ -155,52 +219,19 @@ func (i *Indexer) parseBlockResults(height int64, ts time.Time) error {
 
 	return nil
 }
+func (i *Indexer) HandleEvents(events sdk.StringEvents, msg sdk.Msg, msgIndex int, height int64, hash []byte, ts time.Time) {
+	for _, evt := range events {
+		switch evt.Type {
+		default:
 
-func (i *Indexer) parseTxs(height int64, txs tmtypes.Txs, ts time.Time) {
-	for index, tx := range txs {
-		txTx, sdkTxRes, err := i.client.QueryTx(context.Background(), tx.Hash())
-		if err != nil {
-			log.Fatalf("[Height %d] {%d/%d txs} - Failed to query tx results. Err: %s \n", height, index+1, len(txs), err.Error())
-		}
-
-		feeAmt, feeDenom := i.client.ParseTxFee(txTx.GetFee())
-
-		logStr := ""
-
-		if sdkTxRes.Code > 0 {
-			logStr = sdkTxRes.Logs.String()
-		}
-
-		err = model.InsertTx(tx.Hash(), sdkTxRes.Code, logStr, feeAmt, feeDenom, height, sdkTxRes.GasUsed, sdkTxRes.GasWanted, ts)
-		if err != nil {
-			log.Fatalf("[Height %d] {%d/%d txs} - Failed to write tx to db. Err: %s", height, index+1, len(txs), err.Error())
-		}
-
-		log.Printf("[Height %d] {%d/%d txs} - Successfuly wrote tx to db with %d msgs.", height, index+1, len(txs), len(txTx.GetMsgs()))
-
-		if sdkTxRes.Code == 0 {
-			for msgIndex, msg := range txTx.GetMsgs() {
-				i.HandleMsg(msg, msgIndex, height, tx.Hash(), ts)
-			}
-
-			i.HandleLogs(sdkTxRes.Logs, txTx.GetMsgs(), height, tx.Hash(), ts)
-
-			// i.HandleEvents(txTx.GetMsgs(), sdkTxRes.Events, height, tx.Hash(), ts)
 		}
 	}
 }
+func (i *Indexer) HandleBeginBlockEvents(height int64, events []abci.Event, ts time.Time) {
+	for _, evt := range events {
+		switch evt.Type {
+		default:
 
-func (i *Indexer) HandleMsg(msg sdk.Msg, msgIndex int, height int64, hash []byte, timestamp time.Time) {
-	signer := i.client.MustEncodeAccAddr(msg.GetSigners()[0])
-
-	err := i.InsertAccount(signer, timestamp)
-	if err != nil {
-		log.Fatalf("Failed to insert Account - index (%d), height (%d), err: %s", msgIndex, height, err.Error())
+		}
 	}
-
-	err := i.InsertMsg(height, hash, msgIndex, sdk.MsgTypeURL(msg), signer, timestamp)
-	if err != nil {
-		log.Fatalf("Failed to insert MsgSend - index (%d), height (%d), err: %s", msgIndex, height, err.Error())
-	}
-
 }

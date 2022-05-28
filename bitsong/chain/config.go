@@ -14,6 +14,7 @@ func GetBitsongConfig() *Config {
 		ChainID:       "bitsong-sinfonia-test-1",
 		RPCAddr:       "https://rpc.testnet.bitsong.network:443",
 		GRPCAddr:      "http://142.132.252.143:9090",
+		GRPCInsecure:  true,
 		AccountPrefix: "bitsong",
 		Timeout:       "10s",
 	}

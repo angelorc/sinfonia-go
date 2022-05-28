@@ -108,7 +108,7 @@ func GetIndexerParserCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String(flagModules, "*", "modules to parse eg: * for all or \"blocks,transactions,messages,begin-block-events\" ")
+	cmd.Flags().String(flagModules, "*", "modules to parse eg: * for all or \"blocks,transactions,messages,block-results\" ")
 	cmd.Flags().Int(flagConcurrent, 2, "how many concurrent indexer (do not abuse!)")
 
 	cmd.Flags().String(flagMongoUri, "mongodb://localhost:27017", "the mongo uri connection")
@@ -126,7 +126,7 @@ func parseModules(flag string) *indexer.IndexModules {
 		modules.Blocks = true
 		modules.Transactions = true
 		modules.Messages = true
-		modules.BeginBlockEvents = true
+		modules.BlockResults = true
 
 		return modules
 	}
@@ -139,8 +139,8 @@ func parseModules(flag string) *indexer.IndexModules {
 			modules.Transactions = true
 		case "messages":
 			modules.Messages = true
-		case "begin-block-events":
-			modules.BeginBlockEvents = true
+		case "block-results":
+			modules.BlockResults = true
 		}
 	}
 

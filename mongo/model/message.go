@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"github.com/angelorc/sinfonia-go/utility"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -182,6 +183,34 @@ func (m *Message) Create(data *MessageCreate) error {
 	_, ok := res.InsertedID.(primitive.ObjectID)
 	if !ok {
 		return errors.New("server error")
+	}
+
+	return nil
+}
+
+/**
+ * INDEXER API
+ */
+
+func InsertMsg(height int64, txHash []byte, msgIndex int, msgType, signer string, timestamp time.Time) error {
+	hashStr := hex.EncodeToString(txHash)
+
+	item := Message{}
+	data := MessageCreate{
+		Height:    height,
+		TxHash:    hashStr,
+		MsgIndex:  msgIndex,
+		MsgType:   msgType,
+		Signer:    signer,
+		Timestamp: timestamp,
+	}
+
+	if err := utility.ValidateStruct(data); err != nil {
+		return err
+	}
+
+	if err := item.Create(&data); err != nil {
+		return err
 	}
 
 	return nil
