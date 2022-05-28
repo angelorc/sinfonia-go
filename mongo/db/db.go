@@ -12,6 +12,11 @@ import (
 
 var databases = make(map[string]*mongo.Database)
 
+// GetDB ...
+func GetDB(databaseRefName string) *mongo.Database {
+	return databases[databaseRefName]
+}
+
 // GetCollection ...
 func GetCollection(collectionName string, dataBaseRefName string) *mongo.Collection {
 	db := databases[dataBaseRefName]

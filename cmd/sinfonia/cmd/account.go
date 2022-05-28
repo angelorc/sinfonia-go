@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/angelorc/sinfonia-go/mongo/db"
+	"github.com/angelorc/sinfonia-go/mongo/model"
 	"github.com/spf13/cobra"
 	"strconv"
 )
@@ -54,6 +55,10 @@ func GetAccountSyncCmd() *cobra.Command {
 			}
 			defaultDB.Init()
 			defer defaultDB.Disconnect()
+
+			if err := model.SyncAccounts(); err != nil {
+				return err
+			}
 
 			return nil
 		},

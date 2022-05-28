@@ -27,15 +27,16 @@ const (
  */
 
 type Transaction struct {
-	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	ChainID   string             `json:"chain_id" bson:"chain_id" validate:"required"`
-	Height    int64              `json:"height,omitempty" bson:"height,omitempty" validate:"required"`
-	Hash      string             `json:"hash" bson:"hash" validate:"required"`
-	Code      int                `json:"code" bson:"code"  validate:"required"`
-	Log       interface{}        `json:"log" bson:"log" validate:"required"`
-	Fee       Fee                `json:"fee" bson:"fee"`
-	Gas       Gas                `json:"gas" bson:"gas"`
-	Timestamp time.Time          `json:"timestamp,omitempty" bson:"timestamp,omitempty" validate:"required"`
+	ID      primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	BlockID primitive.ObjectID `json:"block_id" bson:"block_id" validate:"required"`
+	ChainID string             `json:"chain_id" bson:"chain_id" validate:"required"`
+	Height  int64              `json:"height,omitempty" bson:"height,omitempty" validate:"required"`
+	Hash    string             `json:"hash" bson:"hash" validate:"required"`
+	Code    int                `json:"code" bson:"code"  validate:"required"`
+	Log     interface{}        `json:"log" bson:"log" validate:"required"`
+	Fee     Fee                `json:"fee" bson:"fee"`
+	Gas     Gas                `json:"gas" bson:"gas"`
+	Time    time.Time          `json:"time" bson:"time" validate:"required"`
 }
 
 /**
@@ -52,7 +53,9 @@ type TransactionOrderByENUM string
 
 type TransactionWhere struct {
 	ID        *primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Height    int64               `json:"height,omitempty" bson:"height,omitempty"`
+	BlockID   *primitive.ObjectID `json:"block_id,omitempty" bson:"block_id,omitempty"`
+	ChainID   *string             `json:"chain_id,omitempty" bson:"chain_id,omitempty"`
+	Height    *int64              `json:"height,omitempty" bson:"height,omitempty"`
 	Hash      *string             `json:"hash,omitempty" bson:"hash,omitempty"`
 	Code      int                 `json:"code,omitempty" bson:"code,omitempty"`
 	Log       *string             `json:"log,omitempty" bson:"log,omitempty"`
@@ -60,22 +63,23 @@ type TransactionWhere struct {
 	FeeDenom  *string             `json:"fee_denom,omitempty" bson:"fee_denom,omitempty"`
 	GasUsed   int64               `json:"gas_used,omitempty" bson:"gas_used,omitempty"`
 	GasWanted int64               `json:"gas_wanted,omitempty" bson:"gas_wanted,omitempty"`
-	Timestamp time.Time           `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
+	Time      time.Time           `json:"time,omitempty" bson:"time,omitempty"`
 	OR        []bson.M            `json:"$or,omitempty" bson:"$or,omitempty"`
 }
 
 // Write
 
 type TransactionCreate struct {
-	ID        *primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	ChainID   *string             `json:"chain_id" bson:"chain_id" validate:"required"`
-	Height    int64               `json:"height,omitempty" bson:"height,omitempty" validate:"required"`
-	Hash      *string             `json:"hash" bson:"hash,omitempty" validate:"required"`
-	Code      uint32              `json:"code" bson:"code"`
-	Log       interface{}         `json:"log" bson:"log" validate:"required"`
-	Fee       *Fee                `json:"fee,omitempty" bson:"fee,omitempty"`
-	Gas       *Gas                `json:"gas,omitempty" bson:"gas,omitempty"`
-	Timestamp time.Time           `json:"timestamp,omitempty" bson:"timestamp,omitempty" validate:"required"`
+	ID      *primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	BlockID *primitive.ObjectID `json:"block_id" bson:"block_id" validate:"required"`
+	ChainID *string             `json:"chain_id" bson:"chain_id" validate:"required"`
+	Height  int64               `json:"height,omitempty" bson:"height,omitempty" validate:"required"`
+	Hash    *string             `json:"hash" bson:"hash" validate:"required"`
+	Code    uint32              `json:"code" bson:"code"`
+	Log     interface{}         `json:"log" bson:"log" validate:"required"`
+	Fee     *Fee                `json:"fee,omitempty" bson:"fee,omitempty"`
+	Gas     *Gas                `json:"gas,omitempty" bson:"gas,omitempty"`
+	Time    time.Time           `json:"time,omitempty" bson:"time,omitempty" validate:"required"`
 }
 
 /**

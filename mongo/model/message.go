@@ -2,7 +2,6 @@ package model
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"github.com/angelorc/sinfonia-go/utility"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -32,13 +31,14 @@ var SEARCH_FILEDS__MESSAGE = []string{"from", "to"}
  */
 
 type Message struct {
-	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Height    int64              `json:"height" bson:"height"`
-	TxHash    string             `json:"tx_hash" bson:"tx_hash"`
-	MsgIndex  int                `json:"msg_index" bson:"msg_index"`
-	MsgType   string             `json:"msg_type" bson:"msg_type"`
-	Signer    string             `json:"signer" bson:"signer"`
-	Timestamp time.Time          `json:"timestamp,omitempty" bson:"timestamp,omitempty" validate:"required"`
+	ID       primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	ChainID  string             `json:"chain_id" bson:"chain_id" validate:"required"`
+	Height   int64              `json:"height" bson:"height" validate:"required"`
+	TxID     primitive.ObjectID `json:"tx_id" bson:"tx_id" validate:"required"`
+	MsgIndex *int               `json:"msg_index" bson:"msg_index"`
+	MsgType  string             `json:"msg_type" bson:"msg_type"`
+	Signer   string             `json:"signer" bson:"signer"`
+	Time     time.Time          `json:"time,omitempty" bson:"time,omitempty" validate:"required"`
 }
 
 /**
@@ -58,26 +58,28 @@ type MessageWhereUnique struct {
 }
 
 type MessageWhere struct {
-	ID        *primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Height    *int64              `json:"height,omitempty" bson:"height,omitempty"`
-	TxHash    *string             `json:"tx_hash,omitempty" bson:"tx_hash,omitempty"`
-	MsgIndex  *int                `json:"msg_index,omitempty" bson:"msg_index,omitempty"`
-	MsgType   *string             `json:"msg_type,omitempty" bson:"msg_type,omitempty"`
-	Signer    *string             `json:"signer,omitempty" bson:"signer,omitempty"`
-	Timestamp *time.Time          `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
-	OR        *[]bson.M           `json:"$or,omitempty" bson:"$or,omitempty"`
+	ID       *primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	ChainID  *string             `json:"chain_id,omitempty" bson:"chain_id,omitempty"`
+	Height   *int64              `json:"height,omitempty" bson:"height,omitempty"`
+	TxID     *primitive.ObjectID `json:"tx_id,omitempty" bson:"tx_id,omitempty"`
+	MsgIndex *int                `json:"msg_index,omitempty" bson:"msg_index,omitempty"`
+	MsgType  *string             `json:"msg_type,omitempty" bson:"msg_type,omitempty"`
+	Signer   *string             `json:"signer,omitempty" bson:"signer,omitempty"`
+	Time     *time.Time          `json:"time,omitempty" bson:"time,omitempty"`
+	OR       *[]bson.M           `json:"$or,omitempty" bson:"$or,omitempty"`
 }
 
 // Write
 
 type MessageCreate struct {
-	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Height    int64              `json:"height,omitempty" bson:"height,omitempty"`
-	TxHash    string             `json:"tx_hash" bson:"tx_hash,omitempty"`
-	MsgIndex  int                `json:"msg_index" bson:"msg_index,omitempty"`
-	MsgType   string             `json:"msg_type,omitempty" bson:"msg_type,omitempty"`
-	Signer    string             `json:"signer,omitempty" bson:"signer,omitempty"`
-	Timestamp time.Time          `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
+	ID       primitive.ObjectID  `json:"_id,omitempty" bson:"_id,omitempty"`
+	ChainID  *string             `json:"chain_id" bson:"chain_id" validate:"required"`
+	Height   *int64              `json:"height" bson:"height" validate:"required"`
+	TxID     *primitive.ObjectID `json:"tx_id" bson:"tx_id" validate:"required"`
+	MsgIndex *int                `json:"msg_index" bson:"msg_index" validate:"required"`
+	MsgType  *string             `json:"msg_type" bson:"msg_type" validate:"required"`
+	Signer   *string             `json:"signer" bson:"signer" validate:"required"`
+	Time     time.Time           `json:"time" bson:"time" validate:"required"`
 }
 
 /**
@@ -164,13 +166,12 @@ func (m *Message) Create(data *MessageCreate) error {
 	item := new(Message)
 	f := bson.M{
 		"$and": []bson.M{
-			{"height": data.Height},
-			{"tx_hash": data.TxHash},
+			{"tx_id": data.TxID},
 			{"msg_index": data.MsgIndex},
 		},
 	}
 	collection.FindOne(ctx, f).Decode(&item)
-	if item.TxHash != "" {
+	if item.TxID.String() == data.TxID.String() {
 		return nil
 	}
 
@@ -192,24 +193,12 @@ func (m *Message) Create(data *MessageCreate) error {
  * INDEXER API
  */
 
-func InsertMsg(height int64, txHash []byte, msgIndex int, msgType, signer string, timestamp time.Time) error {
-	hashStr := hex.EncodeToString(txHash)
-
-	item := Message{}
-	data := MessageCreate{
-		Height:    height,
-		TxHash:    hashStr,
-		MsgIndex:  msgIndex,
-		MsgType:   msgType,
-		Signer:    signer,
-		Timestamp: timestamp,
-	}
-
+func InsertMsg(data *MessageCreate) error {
 	if err := utility.ValidateStruct(data); err != nil {
 		return err
 	}
 
-	if err := item.Create(&data); err != nil {
+	if err := new(Message).Create(data); err != nil {
 		return err
 	}
 

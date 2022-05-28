@@ -8,6 +8,7 @@ import (
 	"github.com/avast/retry-go"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/sync/errgroup"
 	"log"
 	"strings"
@@ -120,10 +121,26 @@ func (i *Indexer) IndexTransactions(height int64) error {
 		}
 	}
 
-	if block != nil {
-		if i.modules.Transactions {
-			i.parseTxs(block.Block.ChainID, block.Block.Height, block.Block.Data.Txs, block.Block.Time)
-		}
+	if block == nil {
+		return fmt.Errorf("block not found")
+	}
+
+	blockID := model.TxHashToObjectID(block.BlockID.Hash)
+	hashStr := hex.EncodeToString(block.BlockID.Hash)
+	data := &model.BlockCreate{
+		ID:      &blockID,
+		ChainID: block.Block.ChainID,
+		Height:  block.Block.Height,
+		Hash:    hashStr,
+		Time:    block.Block.Time,
+	}
+	err = model.InsertBlock(data)
+	if err != nil {
+		log.Fatalf("[Height %d] - Failed to write block to db. Err: %s", height, err.Error())
+	}
+
+	if i.modules.Transactions {
+		i.parseTxs(blockID, block.Block.ChainID, height, block.Block.Data.Txs, block.Block.Time)
 	}
 
 	if i.modules.BlockResults {
@@ -134,7 +151,7 @@ func (i *Indexer) IndexTransactions(height int64) error {
 
 	return nil
 }
-func (i *Indexer) parseTxs(chainID string, height int64, txs tmtypes.Txs, ts time.Time) {
+func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height int64, txs tmtypes.Txs, time time.Time) {
 	for index, tx := range txs {
 		txTx, sdkTxRes, err := i.client.QueryTx(context.Background(), tx.Hash())
 		if err != nil {
@@ -143,12 +160,13 @@ func (i *Indexer) parseTxs(chainID string, height int64, txs tmtypes.Txs, ts tim
 
 		feeAmt, feeDenom := i.client.ParseTxFee(txTx.GetFee())
 
-		objID := model.TxHashToObjectID(tx.Hash())
+		txID := model.TxHashToObjectID(tx.Hash())
 		hashStr := hex.EncodeToString(tx.Hash())
 		data := &model.TransactionCreate{
-			ID:      &objID,
+			ID:      &txID,
 			ChainID: &chainID,
 			Height:  height,
+			BlockID: &blockID,
 			Hash:    &hashStr,
 			Code:    sdkTxRes.Code,
 			Log:     sdkTxRes.Logs,
@@ -160,7 +178,7 @@ func (i *Indexer) parseTxs(chainID string, height int64, txs tmtypes.Txs, ts tim
 				Used:   sdkTxRes.GasUsed,
 				Wanted: sdkTxRes.GasWanted,
 			},
-			Timestamp: ts,
+			Time: time,
 		}
 
 		err = model.InsertTx(data)
@@ -172,22 +190,27 @@ func (i *Indexer) parseTxs(chainID string, height int64, txs tmtypes.Txs, ts tim
 
 		if sdkTxRes.Code == 0 {
 			for msgIndex, msg := range txTx.GetMsgs() {
-				i.HandleMsg(msg, msgIndex, height, tx.Hash(), ts)
+				i.HandleMsg(txID, chainID, msg, msgIndex, height, time)
 			}
 
-			i.HandleLogs(sdkTxRes.Logs, txTx.GetMsgs(), height, tx.Hash(), ts)
+			i.HandleLogs(sdkTxRes.Logs, txTx.GetMsgs(), height, tx.Hash(), time)
 		}
 	}
 }
-func (i *Indexer) HandleMsg(msg sdk.Msg, msgIndex int, height int64, hash []byte, timestamp time.Time) {
+func (i *Indexer) HandleMsg(txID primitive.ObjectID, chainID string, msg sdk.Msg, msgIndex int, height int64, time time.Time) {
 	signer := i.client.MustEncodeAccAddr(msg.GetSigners()[0])
 
-	err := model.InsertAccount(signer, timestamp)
-	if err != nil {
-		log.Fatalf("Failed to insert Account - index (%d), height (%d), err: %s", msgIndex, height, err.Error())
+	msgType := sdk.MsgTypeURL(msg)
+	data := &model.MessageCreate{
+		TxID:     &txID,
+		Height:   &height,
+		ChainID:  &chainID,
+		MsgIndex: &msgIndex,
+		MsgType:  &msgType,
+		Signer:   &signer,
+		Time:     time,
 	}
-
-	err = model.InsertMsg(height, hash, msgIndex, sdk.MsgTypeURL(msg), signer, timestamp)
+	err := model.InsertMsg(data)
 	if err != nil {
 		log.Fatalf("Failed to insert MsgSend - index (%d), height (%d), err: %s", msgIndex, height, err.Error())
 	}

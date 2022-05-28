@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/angelorc/sinfonia-go/mongo/db"
 	"github.com/angelorc/sinfonia-go/utility"
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,12 +18,6 @@ import (
 
 const DB_COLLECTION_NAME__ACCOUNT = "accounts"
 const DB_REF_NAME__ACCOUNT = "default"
-
-/**
- * SEARCH regex fields
- */
-
-var SEARCH_FILEDS__ACCOUNT = []string{"address"}
 
 /**
  * MODEL
@@ -177,7 +172,7 @@ func (m *Account) Create(data *AccountCreate) error {
  * INDEXER API
  */
 
-func InsertAccount(acc string, firstSeen time.Time) error {
+func EnsureAccount(acc string, firstSeen time.Time) error {
 	item := Account{}
 	data := AccountCreate{
 		Address:   acc,
@@ -191,6 +186,77 @@ func InsertAccount(acc string, firstSeen time.Time) error {
 	if err := item.Create(&data); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func SyncAccounts() error {
+	// TODO: get last block from db
+	lasBlock := int64(100)
+
+	// get last block synced from account
+	sync := new(Sync)
+	sync.One()
+
+	// collection
+	collection := db.GetCollection(DB_COLLECTION_NAME__MESSAGE, DB_REF_NAME__MESSAGE)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// pipeline
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{
+				"height": bson.M{
+					"$gt":  sync.Accounts,
+					"$lte": lasBlock,
+				},
+			},
+		},
+		{
+			"$project": bson.M{
+				"signer":     1,
+				"first_seen": "$time",
+			},
+		},
+		{
+			"$group": bson.M{
+				"_id": "$signer",
+				"first_seen": bson.M{
+					"$first": "$first_seen",
+				},
+			},
+		},
+	}
+
+	// record struct
+	type acc struct {
+		Signer    string    `bson:"_id,omitempty"`
+		FirstSeen time.Time `bson:"first_seen,omitempty"`
+	}
+
+	// aggregate pipeline
+	accCursor, err := collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return err
+	}
+
+	// decode
+	var accounts []acc
+	if err = accCursor.All(ctx, &accounts); err != nil {
+		return err
+	}
+
+	for _, a := range accounts {
+		if err := EnsureAccount(a.Signer, a.FirstSeen); err != nil {
+			return err
+		}
+	}
+
+	// update sync with last synced height
+	sync.Accounts = lasBlock
+
+	fmt.Println(fmt.Sprintf("%d accounts synced from block %d ", len(accounts), sync.Accounts))
 
 	return nil
 }
