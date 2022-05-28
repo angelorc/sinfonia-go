@@ -4,7 +4,7 @@ use (
 	./bitsong
 	./config
 	./mongo
-	./osmosis
+	//./osmosis
 	./server
 	./tendermint
 	./utility
