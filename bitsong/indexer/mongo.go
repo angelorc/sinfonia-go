@@ -64,3 +64,21 @@ func (i *Indexer) InsertMsg(height int64, txHash []byte, msgIndex int, msgType, 
 
 	return nil
 }
+
+func (i *Indexer) InsertAccount(acc string, firstSeen time.Time) error {
+	item := model.Account{}
+	data := model.AccountCreate{
+		Address:   acc,
+		FirstSeen: firstSeen,
+	}
+
+	if err := utility.ValidateStruct(data); err != nil {
+		return err
+	}
+
+	if err := item.Create(&data); err != nil {
+		return err
+	}
+
+	return nil
+}

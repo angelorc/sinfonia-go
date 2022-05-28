@@ -25,7 +25,7 @@ func Start() {
 	// Load routes from rest
 	InitRest(e)
 
-	// Start server routes
+	// Parse server routes
 	go func() {
 		if err := e.Start(":" + "9090"); err != nil {
 			e.Logger.Info("shutting down the server")

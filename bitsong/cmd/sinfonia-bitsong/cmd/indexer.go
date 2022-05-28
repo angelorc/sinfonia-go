@@ -44,8 +44,8 @@ func GetIndexerParserCmd() *cobra.Command {
 			}
 
 			mongoDBName, err := cmd.Flags().GetString(flagMongoDBName)
-			if err != nil && mongoDBName != "" {
-				return fmt.Errorf("indicate the mongo db\n")
+			if err != nil || mongoDBName == "" {
+				return fmt.Errorf("indicate the mongo db name eg: --mongo-dbname [name]\n")
 			}
 
 			mongoRetryWrites, _ := cmd.Flags().GetBool(flagMongoRetry)
@@ -100,7 +100,9 @@ func GetIndexerParserCmd() *cobra.Command {
 				return fmt.Errorf("indicate modules to parse")
 			}
 
-			indexer.NewIndexer(client).Parse(fromBlock, toBlock, concurrent, parseModules(modulesStr))
+			indexer.
+				NewIndexer(client, parseModules(modulesStr), concurrent).
+				Parse(fromBlock, toBlock)
 
 			return nil
 		},

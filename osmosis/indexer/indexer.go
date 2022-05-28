@@ -29,67 +29,39 @@ var (
 	RtyErr    = retry.LastErrorOnly(true)
 )
 
+type IndexModules struct {
+	Blocks       bool
+	Transactions bool
+	Messages     bool
+	BlockResults bool
+}
+
 type Indexer struct {
-	client *chain.Client
+	client     *chain.Client
+	modules    *IndexModules
+	concurrent int
 }
 
-func NewIndexer(client *chain.Client) *Indexer {
-	return &Indexer{client: client}
-}
-
-func (i *Indexer) Start(startHeight, endHeight int64, concurrent int) {
-	var blocks []int64
-	for i := startHeight; i <= endHeight; i++ {
-		blocks = append(blocks, i)
-	}
-
-	if err := i.parseBlocks(blocks, concurrent, i.IndexTransactions); err != nil {
-		log.Fatalf("failed to index blocks. err: %v", err)
+func NewIndexer(client *chain.Client, modules *IndexModules, concurrent int) *Indexer {
+	return &Indexer{
+		client:     client,
+		modules:    modules,
+		concurrent: concurrent,
 	}
 }
 
-func (i *Indexer) IndexTransactions(height int64) error {
-	fmt.Println(fmt.Sprintf("Index transactions on block %d", height))
+func (i *Indexer) Parse(fromBlock, toBlock int64) {
+	diff := (fromBlock - toBlock) + 1
+	blocks := make([]int64, diff)
+	for i := fromBlock; i <= toBlock; i++ {
+		blocks[i-1] = i
+	}
 
-	block, err := i.client.QueryBlock(context.Background(), &height)
-	if err != nil {
-		if err = retry.Do(func() error {
-			block, err = i.client.QueryBlock(context.Background(), &height)
-			if err != nil {
-				return err
-			}
-
-			return nil
-		}, RtyAtt, RtyDel, RtyErr, retry.DelayType(retry.BackOffDelay), retry.OnRetry(func(n uint, err error) {
-			log.Fatalf("retry: attempt %d, height %d, err: %v", n, height, err)
-		})); err != nil {
-			return err
+	if i.modules.Blocks {
+		if err := i.parseBlocks(blocks, i.concurrent, i.IndexTransactions); err != nil {
+			log.Fatalf("failed to index blocks. err: %v", err)
 		}
 	}
-
-	if block != nil {
-		i.parseTxs(block.Block.Height, block.Block.Data.Txs, block.Block.Time)
-	}
-
-	blockResults, err := i.client.QueryBlockResults(context.Background(), &height)
-	if err != nil {
-		if err = retry.Do(func() error {
-			blockResults, err = i.client.QueryBlockResults(context.Background(), &height)
-			if err != nil {
-				return err
-			}
-
-			return nil
-		}, RtyAtt, RtyDel, RtyErr, retry.DelayType(retry.BackOffDelay), retry.OnRetry(func(n uint, err error) {
-			log.Fatalf("retry block_results: attempt %d, height %d, err: %v", n, height, err)
-		})); err != nil {
-			return err
-		}
-	}
-
-	i.HandleBeginBlockEvents(height, blockResults.BeginBlockEvents, block.Block.Time)
-
-	return nil
 }
 
 func (i *Indexer) parseBlocks(blocks []int64, concurrent int, cb func(height int64) error) error {
@@ -133,13 +105,64 @@ func (i *Indexer) parseBlocks(blocks []int64, concurrent int, cb func(height int
 	return nil
 }
 
+func (i *Indexer) IndexTransactions(height int64) error {
+	fmt.Println(fmt.Sprintf("Index transactions on block %d", height))
+
+	block, err := i.client.QueryBlock(context.Background(), &height)
+	if err != nil {
+		if err = retry.Do(func() error {
+			block, err = i.client.QueryBlock(context.Background(), &height)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}, RtyAtt, RtyDel, RtyErr, retry.DelayType(retry.BackOffDelay), retry.OnRetry(func(n uint, err error) {
+			log.Fatalf("retry: attempt %d, height %d, err: %v", n, height, err)
+		})); err != nil {
+			return err
+		}
+	}
+
+	if block != nil {
+		if i.modules.Transactions {
+			i.parseTxs(block.Block.Height, block.Block.Data.Txs, block.Block.Time)
+		}
+	}
+
+	if i.modules.BlockResults {
+		if err := i.parseBlockResults(height, block.Block.Time); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (i *Indexer) parseBlockResults(height int64, ts time.Time) error {
+	blockResults, err := i.client.QueryBlockResults(context.Background(), &height)
+	if err != nil {
+		if err = retry.Do(func() error {
+			blockResults, err = i.client.QueryBlockResults(context.Background(), &height)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}, RtyAtt, RtyDel, RtyErr, retry.DelayType(retry.BackOffDelay), retry.OnRetry(func(n uint, err error) {
+			log.Fatalf("retry block_results: attempt %d, height %d, err: %v", n, height, err)
+		})); err != nil {
+			return err
+		}
+	}
+
+	i.HandleBeginBlockEvents(height, blockResults.BeginBlockEvents, ts)
+
+	return nil
+}
+
 func (i *Indexer) parseTxs(height int64, txs tmtypes.Txs, ts time.Time) {
 	for index, tx := range txs {
-		/*sdkTx, err := i.client.DecodeTx(tx)
-		if err != nil {
-			log.Fatalf("[Height %d] {%d/%d txs} - %s", height, index+1, len(txs), err.Error())
-		}*/
-
 		txTx, sdkTxRes, err := i.client.QueryTx(context.Background(), tx.Hash())
 		if err != nil {
 			log.Fatalf("[Height %d] {%d/%d txs} - Failed to query tx results. Err: %s \n", height, index+1, len(txs), err.Error())

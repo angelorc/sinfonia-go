@@ -48,11 +48,11 @@ func (i *Indexer) InsertMsg(height int64, txHash []byte, msgIndex int, msgType, 
 
 	item := model.Message{}
 	data := model.MessageCreate{
-		Height:    &height,
-		TxHash:    &hashStr,
-		MsgIndex:  &msgIndex,
-		MsgType:   &msgType,
-		Signer:    &signer,
+		Height:    height,
+		TxHash:    hashStr,
+		MsgIndex:  msgIndex,
+		MsgType:   msgType,
+		Signer:    signer,
 		Timestamp: timestamp,
 	}
 
@@ -85,7 +85,7 @@ func (i *Indexer) InsertAccount(acc string, firstSeen time.Time) error {
 	return nil
 }
 
-func (i *Indexer) InsertSwap(height int64, txHash []byte, msgIndex int, poolId uint64, tokensIn, tokensOut, fee, acc string, ts time.Time) error {
+func (i *Indexer) InsertSwap(height int64, txHash []byte, msgIndex int, poolId int64, tokensIn, tokensOut, fee, acc string, ts time.Time) error {
 	hashStr := hex.EncodeToString(txHash)
 
 	item := model.Swap{}
