@@ -6,10 +6,7 @@ import (
 )
 
 func main() {
-	rootCmd := cmd.NewRootCmd()
-
-	err := rootCmd.Execute()
-	if err != nil {
+	if err := cmd.NewRootCmd().Execute(); err != nil {
 		os.Exit(1)
 	}
 }
