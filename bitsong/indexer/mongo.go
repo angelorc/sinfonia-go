@@ -46,11 +46,11 @@ func (i *Indexer) InsertMsg(height int64, txHash []byte, msgIndex int, msgType, 
 
 	item := model.Message{}
 	data := model.MessageCreate{
-		Height:    &height,
-		TxHash:    &hashStr,
-		MsgIndex:  &msgIndex,
-		MsgType:   &msgType,
-		Signer:    &signer,
+		Height:    height,
+		TxHash:    hashStr,
+		MsgIndex:  msgIndex,
+		MsgType:   msgType,
+		Signer:    signer,
 		Timestamp: timestamp,
 	}
 
