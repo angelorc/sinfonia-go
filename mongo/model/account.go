@@ -191,7 +191,6 @@ func EnsureAccount(acc string, firstSeen time.Time) error {
 }
 
 func SyncAccounts() error {
-	// TODO: get last block from db
 	lasBlock := GetLastHeight()
 
 	// get last block synced from account

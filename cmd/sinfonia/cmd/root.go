@@ -25,6 +25,7 @@ func NewRootCmd() *cobra.Command {
 
 	rootCmd.AddCommand(
 		GetAccountCmd(),
+		GetFantokenCmd(),
 	)
 
 	return rootCmd

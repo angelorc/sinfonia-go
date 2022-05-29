@@ -7,22 +7,22 @@ import (
 	"strconv"
 )
 
-func GetAccountCmd() *cobra.Command {
+func GetFantokenCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "account",
-		Short: "module account",
+		Use:   "fantoken",
+		Short: "module fantoken",
 	}
 
-	cmd.AddCommand(GetAccountSyncCmd())
+	cmd.AddCommand(GetFantokenSyncCmd())
 
 	return cmd
 }
 
-func GetAccountSyncCmd() *cobra.Command {
+func GetFantokenSyncCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "sync",
-		Short:   "sync accounts from latest blocks",
-		Example: "sinfonia account sync --mongo-dbname sinfonia-test",
+		Short:   "sync fantokens from latest blocks",
+		Example: "sinfonia fantoken sync --mongo-dbname sinfonia-test",
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			mongoURI, mongoDBName, mongoRetryWrites, err := parseMongoFlags(cmd)
@@ -42,7 +42,7 @@ func GetAccountSyncCmd() *cobra.Command {
 			defaultDB.Init()
 			defer defaultDB.Disconnect()
 
-			if err := model.SyncAccounts(); err != nil {
+			if err := model.SyncFantokens(); err != nil {
 				return err
 			}
 
