@@ -192,11 +192,16 @@ func EnsureAccount(acc string, firstSeen time.Time) error {
 
 func SyncAccounts() error {
 	// TODO: get last block from db
-	lasBlock := int64(100)
+	lasBlock := GetLastHeight()
 
 	// get last block synced from account
 	sync := new(Sync)
 	sync.One()
+
+	if sync.ID.IsZero() {
+		sync.ID = primitive.NewObjectID()
+		sync.Accounts = int64(0)
+	}
 
 	// collection
 	collection := db.GetCollection(DB_COLLECTION_NAME__MESSAGE, DB_REF_NAME__MESSAGE)
@@ -255,6 +260,9 @@ func SyncAccounts() error {
 
 	// update sync with last synced height
 	sync.Accounts = lasBlock
+	if err := sync.Save(); err != nil {
+		return err
+	}
 
 	fmt.Println(fmt.Sprintf("%d accounts synced from block %d ", len(accounts), sync.Accounts))
 

@@ -76,7 +76,7 @@ type TransactionCreate struct {
 	Height  int64               `json:"height,omitempty" bson:"height,omitempty" validate:"required"`
 	Hash    *string             `json:"hash" bson:"hash" validate:"required"`
 	Code    uint32              `json:"code" bson:"code"`
-	Log     interface{}         `json:"log" bson:"log" validate:"required"`
+	Log     interface{}         `json:"log" bson:"log"`
 	Fee     *Fee                `json:"fee,omitempty" bson:"fee,omitempty"`
 	Gas     *Gas                `json:"gas,omitempty" bson:"gas,omitempty"`
 	Time    time.Time           `json:"time,omitempty" bson:"time,omitempty" validate:"required"`

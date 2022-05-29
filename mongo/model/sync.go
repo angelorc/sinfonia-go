@@ -6,6 +6,7 @@ import (
 	"github.com/angelorc/sinfonia-go/utility"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
 
@@ -45,7 +46,7 @@ func (s *Sync) One() error {
 
 func (s *Sync) Save() error {
 	// validate
-	if err := utility.ValidateStruct(&s); err != nil {
+	if err := utility.ValidateStruct(s); err != nil {
 		return err
 	}
 
@@ -55,10 +56,17 @@ func (s *Sync) Save() error {
 	defer cancel()
 
 	// operation
-	_, err := collection.UpdateOne(ctx, bson.M{"_id": s.ID}, bson.M{"$set": s})
-	collection.FindOne(ctx, bson.M{"_id": s.ID}).Decode(&s)
-	if err != nil {
+	filter := bson.M{"_id": s.ID}
+	update := bson.M{"$set": s}
+	opts := options.Update().SetUpsert(true)
+
+	if _, err := collection.UpdateOne(ctx, filter, update, opts); err != nil {
 		return err
 	}
+
+	if err := collection.FindOne(ctx, bson.M{"_id": s.ID}).Decode(&s); err != nil {
+		return err
+	}
+
 	return nil
 }

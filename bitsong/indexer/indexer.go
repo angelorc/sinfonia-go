@@ -48,11 +48,10 @@ func NewIndexer(client *chain.Client, modules *IndexModules, concurrent int) *In
 }
 
 func (i *Indexer) Parse(fromBlock, toBlock int64) {
-	diff := (toBlock - fromBlock) + 1
+	blocks := make([]int64, 0)
 
-	blocks := make([]int64, diff)
 	for i := fromBlock; i <= toBlock; i++ {
-		blocks[i-1] = i
+		blocks = append(blocks, i)
 	}
 
 	if i.modules.Blocks {
@@ -158,10 +157,14 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 			log.Fatalf("[Height %d] {%d/%d txs} - Failed to query tx results. Err: %s \n", height, index+1, len(txs), err.Error())
 		}
 
-		feeAmt, feeDenom := i.client.ParseTxFee(txTx.GetFee())
+		if sdkTxRes.Code > 0 {
+			return
+		}
 
 		txID := model.TxHashToObjectID(tx.Hash())
 		hashStr := hex.EncodeToString(tx.Hash())
+		feeAmt, feeDenom := i.client.ParseTxFee(txTx.GetFee())
+
 		data := &model.TransactionCreate{
 			ID:      &txID,
 			ChainID: &chainID,
@@ -188,13 +191,11 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 
 		log.Printf("[Height %d] {%d/%d txs} - Successfuly wrote tx to db with %d msgs.", height, index+1, len(txs), len(txTx.GetMsgs()))
 
-		if sdkTxRes.Code == 0 {
-			for msgIndex, msg := range txTx.GetMsgs() {
-				i.HandleMsg(txID, chainID, msg, msgIndex, height, time)
-			}
-
-			i.HandleLogs(sdkTxRes.Logs, txTx.GetMsgs(), height, tx.Hash(), time)
+		for msgIndex, msg := range txTx.GetMsgs() {
+			i.HandleMsg(txID, chainID, msg, msgIndex, height, time)
 		}
+
+		i.HandleLogs(sdkTxRes.Logs, txTx.GetMsgs(), height, tx.Hash(), time)
 	}
 }
 func (i *Indexer) HandleMsg(txID primitive.ObjectID, chainID string, msg sdk.Msg, msgIndex int, height int64, time time.Time) {

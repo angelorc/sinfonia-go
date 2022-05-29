@@ -48,7 +48,7 @@ type BlockWhere struct {
 	Height  *int64              `json:"height,omitempty" bson:"height,omitempty"`
 	Hash    *string             `json:"hash,omitempty" bson:"hash,omitempty"`
 	Time    *time.Time          `json:"time,omitempty" bson:"time,omitempty"`
-	OR      []bson.M            `json:"$or,omitempty" bson:"$or,omitempty"`
+	OR      *[]bson.M           `json:"$or,omitempty" bson:"$or,omitempty"`
 }
 
 // Write
@@ -119,11 +119,25 @@ func (b *Block) Count(filter *BlockWhere) (int, error) {
 	collection := db.GetCollection(DB_COLLECTION_NAME__BLOCK, DB_REF_NAME__BLOCK)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	count, err := collection.CountDocuments(ctx, filter, nil)
 	if err != nil {
 		return 0, err
 	}
+
 	return int(count), nil
+}
+func GetLastHeight() int64 {
+	collection := db.GetCollection(DB_COLLECTION_NAME__BLOCK, DB_REF_NAME__BLOCK)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	block := new(Block)
+	filter := &BlockWhere{}
+	opts := options.FindOne().SetSort(bson.M{"height": -1})
+
+	collection.FindOne(ctx, filter, opts).Decode(&block)
+	return block.Height
 }
 
 // Write Operations
