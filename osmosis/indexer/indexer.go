@@ -2,14 +2,14 @@ package indexer
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"github.com/angelorc/sinfonia-go/mongo/model"
 	"github.com/avast/retry-go"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/osmosis-labs/osmosis/v7/x/gamm/pool-models/balancer"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/sync/errgroup"
 	"log"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -51,10 +51,10 @@ func NewIndexer(client *chain.Client, modules *IndexModules, concurrent int) *In
 }
 
 func (i *Indexer) Parse(fromBlock, toBlock int64) {
-	diff := (fromBlock - toBlock) + 1
-	blocks := make([]int64, diff)
+	blocks := make([]int64, 0)
+
 	for i := fromBlock; i <= toBlock; i++ {
-		blocks[i-1] = i
+		blocks = append(blocks, i)
 	}
 
 	if i.modules.Blocks {
@@ -124,10 +124,26 @@ func (i *Indexer) IndexTransactions(height int64) error {
 		}
 	}
 
-	if block != nil {
-		if i.modules.Transactions {
-			i.parseTxs(block.Block.Height, block.Block.Data.Txs, block.Block.Time)
-		}
+	if block == nil {
+		return fmt.Errorf("block not found")
+	}
+
+	blockID := model.TxHashToObjectID(block.BlockID.Hash)
+	hashStr := hex.EncodeToString(block.BlockID.Hash)
+	data := &model.BlockCreate{
+		ID:      &blockID,
+		ChainID: block.Block.ChainID,
+		Height:  block.Block.Height,
+		Hash:    hashStr,
+		Time:    block.Block.Time,
+	}
+	err = model.InsertBlock(data)
+	if err != nil {
+		log.Fatalf("[Height %d] - Failed to write block to db. Err: %s", height, err.Error())
+	}
+
+	if i.modules.Transactions {
+		i.parseTxs(blockID, block.Block.ChainID, height, block.Block.Data.Txs, block.Block.Time)
 	}
 
 	if i.modules.BlockResults {
@@ -139,71 +155,69 @@ func (i *Indexer) IndexTransactions(height int64) error {
 	return nil
 }
 
-func (i *Indexer) parseBlockResults(height int64, ts time.Time) error {
-	blockResults, err := i.client.QueryBlockResults(context.Background(), &height)
-	if err != nil {
-		if err = retry.Do(func() error {
-			blockResults, err = i.client.QueryBlockResults(context.Background(), &height)
-			if err != nil {
-				return err
-			}
-
-			return nil
-		}, RtyAtt, RtyDel, RtyErr, retry.DelayType(retry.BackOffDelay), retry.OnRetry(func(n uint, err error) {
-			log.Fatalf("retry block_results: attempt %d, height %d, err: %v", n, height, err)
-		})); err != nil {
-			return err
-		}
-	}
-
-	i.HandleBeginBlockEvents(height, blockResults.BeginBlockEvents, ts)
-
-	return nil
-}
-
-func (i *Indexer) parseTxs(height int64, txs tmtypes.Txs, ts time.Time) {
+func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height int64, txs tmtypes.Txs, time time.Time) {
 	for index, tx := range txs {
 		txTx, sdkTxRes, err := i.client.QueryTx(context.Background(), tx.Hash())
 		if err != nil {
 			log.Fatalf("[Height %d] {%d/%d txs} - Failed to query tx results. Err: %s \n", height, index+1, len(txs), err.Error())
 		}
 
-		feeAmt, feeDenom := i.client.ParseTxFee(txTx.GetFee())
-
-		logStr := ""
-
 		if sdkTxRes.Code > 0 {
-			logStr = sdkTxRes.Logs.String()
+			return
 		}
 
-		err = i.InsertTx(tx.Hash(), sdkTxRes.Code, logStr, feeAmt, feeDenom, height, sdkTxRes.GasUsed, sdkTxRes.GasWanted, ts)
+		txID := model.TxHashToObjectID(tx.Hash())
+		hashStr := hex.EncodeToString(tx.Hash())
+		feeAmt, feeDenom := i.client.ParseTxFee(txTx.GetFee())
+
+		data := &model.TransactionCreate{
+			ID:      &txID,
+			ChainID: &chainID,
+			Height:  height,
+			BlockID: &blockID,
+			Hash:    &hashStr,
+			Code:    sdkTxRes.Code,
+			Log:     sdkTxRes.Logs,
+			Fee: &model.Fee{
+				Amount: feeAmt,
+				Denom:  feeDenom,
+			},
+			Gas: &model.Gas{
+				Used:   sdkTxRes.GasUsed,
+				Wanted: sdkTxRes.GasWanted,
+			},
+			Time: time,
+		}
+
+		err = model.InsertTx(data)
 		if err != nil {
 			log.Fatalf("[Height %d] {%d/%d txs} - Failed to write tx to db. Err: %s", height, index+1, len(txs), err.Error())
 		}
 
 		log.Printf("[Height %d] {%d/%d txs} - Successfuly wrote tx to db with %d msgs.", height, index+1, len(txs), len(txTx.GetMsgs()))
 
-		if sdkTxRes.Code == 0 {
-			for msgIndex, msg := range txTx.GetMsgs() {
-				i.HandleMsg(msg, msgIndex, height, tx.Hash(), ts)
-			}
-
-			i.HandleLogs(sdkTxRes.Logs, txTx.GetMsgs(), height, tx.Hash(), ts)
-
-			// i.HandleEvents(txTx.GetMsgs(), sdkTxRes.Events, height, tx.Hash(), ts)
+		for msgIndex, msg := range txTx.GetMsgs() {
+			i.HandleMsg(txID, chainID, msg, msgIndex, height, time)
 		}
+
+		i.HandleLogs(sdkTxRes.Logs, txTx.GetMsgs(), height, tx.Hash(), time)
 	}
 }
 
-func (i *Indexer) HandleMsg(msg sdk.Msg, msgIndex int, height int64, hash []byte, timestamp time.Time) {
+func (i *Indexer) HandleMsg(txID primitive.ObjectID, chainID string, msg sdk.Msg, msgIndex int, height int64, time time.Time) {
 	signer := i.client.MustEncodeAccAddr(msg.GetSigners()[0])
 
-	err := i.InsertAccount(signer, timestamp)
-	if err != nil {
-		log.Fatalf("Failed to insert Account - index (%d), height (%d), err: %s", msgIndex, height, err.Error())
+	msgType := sdk.MsgTypeURL(msg)
+	data := &model.MessageCreate{
+		TxID:     &txID,
+		Height:   &height,
+		ChainID:  &chainID,
+		MsgIndex: &msgIndex,
+		MsgType:  &msgType,
+		Signer:   &signer,
+		Time:     time,
 	}
-
-	err = i.InsertMsg(height, hash, msgIndex, sdk.MsgTypeURL(msg), signer, timestamp)
+	err := model.InsertMsg(data)
 	if err != nil {
 		log.Fatalf("Failed to insert MsgSend - index (%d), height (%d), err: %s", msgIndex, height, err.Error())
 	}
@@ -276,87 +290,36 @@ func (i *Indexer) HandleLogs(logs sdk.ABCIMessageLogs, msgs []sdk.Msg, height in
 	}
 }
 
+func (i *Indexer) parseBlockResults(height int64, ts time.Time) error {
+	blockResults, err := i.client.QueryBlockResults(context.Background(), &height)
+	if err != nil {
+		if err = retry.Do(func() error {
+			blockResults, err = i.client.QueryBlockResults(context.Background(), &height)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}, RtyAtt, RtyDel, RtyErr, retry.DelayType(retry.BackOffDelay), retry.OnRetry(func(n uint, err error) {
+			log.Fatalf("retry block_results: attempt %d, height %d, err: %v", n, height, err)
+		})); err != nil {
+			return err
+		}
+	}
+
+	i.HandleBeginBlockEvents(height, blockResults.BeginBlockEvents, ts)
+
+	return nil
+}
+
 func (i *Indexer) HandleEvents(events sdk.StringEvents, msg sdk.Msg, msgIndex int, height int64, hash []byte, ts time.Time) {
 	for _, evt := range events {
 		switch evt.Type {
 		case gammtypes.TypeEvtTokenSwapped:
-			i.handleTokenSwapped(height, hash, msgIndex, msg, evt.Attributes, ts)
+			// i.handleTokenSwapped(height, hash, msgIndex, msg, evt.Attributes, ts)
 		case gammtypes.TypeEvtPoolCreated:
-			i.handlePoolCreated(height, hash, msgIndex, msg, evt.Attributes, ts)
+			// i.handlePoolCreated(height, hash, msgIndex, msg, evt.Attributes, ts)
 		}
-	}
-}
-
-func (i *Indexer) handleTokenSwapped(height int64, hash []byte, msgIndex int, _ sdk.Msg, attrs []sdk.Attribute, ts time.Time) {
-	poolId := uint64(0)
-	tokensIn := ""
-	tokensOut := ""
-	sender := ""
-
-	for _, a := range attrs {
-		switch a.Key {
-		case sdk.AttributeKeySender:
-			sender = a.Value
-		case gammtypes.AttributeKeyPoolId:
-			poolId, _ = strconv.ParseUint(a.Value, 0, 64)
-		case gammtypes.AttributeKeyTokensIn:
-			tokensIn = a.Value
-		case gammtypes.AttributeKeyTokensOut:
-			tokensOut = a.Value
-		}
-	}
-
-	item := new(model.Pool)
-	item.One(
-		&model.PoolWhere{
-			PoolID: &poolId,
-		},
-	)
-
-	err := i.InsertSwap(height, hash, msgIndex, poolId, tokensIn, tokensOut, calcFee(tokensIn, item.SwapFee), sender, ts)
-	if err != nil {
-		log.Fatalf("Failed to insert TokenSwap - index (%d), height (%d), err: %s", msgIndex, height, err.Error())
-	}
-}
-
-func calcFee(tokenInStr, swapFeeStr string) string {
-	tokenIn, _ := sdk.ParseCoinNormalized(tokenInStr)
-	swapFee, _ := sdk.NewDecFromStr(swapFeeStr)
-	tokenInAfterFee := tokenIn.Amount.ToDec().Mul(sdk.OneDec().Sub(swapFee)).TruncateInt()
-
-	return sdk.Coin{
-		Denom:  tokenIn.Denom,
-		Amount: tokenIn.Amount.Sub(tokenInAfterFee),
-	}.String()
-}
-
-func (i *Indexer) handlePoolCreated(height int64, hash []byte, msgIndex int, msg sdk.Msg, attrs []sdk.Attribute, ts time.Time) {
-	msgCreateBalancerPool := msg.(*balancer.MsgCreateBalancerPool)
-	poolId := uint64(0)
-	for _, a := range attrs {
-		switch a.Key {
-		case gammtypes.AttributeKeyPoolId:
-			poolId, _ = strconv.ParseUint(string(a.Value), 0, 64)
-		}
-	}
-
-	poolAssets := make([]model.PoolAsset, len(msgCreateBalancerPool.PoolAssets))
-
-	for i, pa := range msgCreateBalancerPool.PoolAssets {
-		poolAsset := model.PoolAsset{
-			Token:  pa.Token.String(),
-			Weight: pa.Weight.String(),
-		}
-		poolAssets[i] = poolAsset
-	}
-
-	swapFee := msgCreateBalancerPool.PoolParams.SwapFee
-	exitFee := msgCreateBalancerPool.PoolParams.ExitFee
-	sender := i.client.MustEncodeAccAddr(msg.GetSigners()[0])
-
-	err := i.InsertPool(height, hash, msgIndex, poolId, poolAssets, swapFee.String(), exitFee.String(), sender, ts)
-	if err != nil {
-		log.Fatalf("Failed to insert TokenSwap - index (%d), height (%d), err: %s", msgIndex, height, err.Error())
 	}
 }
 
@@ -364,26 +327,7 @@ func (i *Indexer) HandleBeginBlockEvents(height int64, events []abci.Event, ts t
 	for _, evt := range events {
 		switch evt.Type {
 		case incentivetypes.TypeEvtDistribution:
-			i.handleIncentives(height, evt.Attributes, ts)
+			// i.handleIncentives(height, evt.Attributes, ts)
 		}
-	}
-}
-
-func (i *Indexer) handleIncentives(height int64, attrs []abci.EventAttribute, ts time.Time) {
-	receiver := ""
-	coins := ""
-
-	for _, attr := range attrs {
-		switch string(attr.Key) {
-		case incentivetypes.AttributeReceiver:
-			receiver = string(attr.Value)
-		case incentivetypes.AttributeAmount:
-			coins = string(attr.Value)
-		}
-	}
-
-	err := i.InsertIncentive(height, receiver, coins, ts)
-	if err != nil {
-		log.Fatalf("Failed to insert Incentive - height (%d), receiver (%s), err: %s", height, receiver, err.Error())
 	}
 }

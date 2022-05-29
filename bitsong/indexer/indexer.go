@@ -247,7 +247,7 @@ func (i *Indexer) HandleEvents(events sdk.StringEvents, msg sdk.Msg, msgIndex in
 	for _, evt := range events {
 		switch evt.Type {
 		default:
-
+			// TODO:
 		}
 	}
 }
@@ -255,7 +255,7 @@ func (i *Indexer) HandleBeginBlockEvents(height int64, events []abci.Event, ts t
 	for _, evt := range events {
 		switch evt.Type {
 		default:
-
+			// TODO:
 		}
 	}
 }

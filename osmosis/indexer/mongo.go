@@ -71,7 +71,7 @@ func (i *Indexer) InsertIncentive(height int64, receiver, coinsStr string, ts ti
 
 	assets := make([]model.IncentiveAsset, len(coins))
 	for i, coin := range coins {
-		assets[i].Amount = coin.Amount.Uint64()
+		assets[i].Amount = coin.Amount.Int64()
 		assets[i].Denom = coin.Denom
 	}
 
