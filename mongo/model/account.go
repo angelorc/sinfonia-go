@@ -263,7 +263,7 @@ func SyncAccounts() error {
 		return err
 	}
 
-	fmt.Println(fmt.Sprintf("%d accounts synced from block %d ", len(accounts), sync.Accounts))
+	fmt.Println(fmt.Sprintf("%d accounts synced to block %d ", len(accounts), sync.Accounts))
 
 	return nil
 }

@@ -307,7 +307,7 @@ func SyncFantokens() error {
 		return err
 	}
 
-	fmt.Println(fmt.Sprintf("%d fantokens synced from block %d ", len(records), sync.Fantokens))
+	fmt.Println(fmt.Sprintf("%d fantokens synced to block %d ", len(records), sync.Fantokens))
 
 	return nil
 }
