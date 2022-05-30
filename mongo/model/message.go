@@ -3,7 +3,6 @@ package model
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/angelorc/sinfonia-go/utility"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
@@ -206,8 +205,8 @@ func InsertMsg(data *MessageCreate) error {
 	return nil
 }
 
-// TxsLogs struct
-type TxsLogs struct {
+// TxLogs struct
+type TxLogs struct {
 	Signer  string             `bson:"signer"`
 	Time    time.Time          `bson:"time"`
 	ChainID string             `json:"chain_id" bson:"chain_id" validate:"required"`
@@ -227,7 +226,7 @@ type TxsLogs struct {
 	} `bson:"tx"`
 }
 
-func GetTxsAndLogsByMessageType(msgType string, fromBlock, toBlock int64) (TxsLogs, error) {
+func GetTxsAndLogsByMessageType(msgType string, fromBlock, toBlock int64) ([]TxLogs, error) {
 	// collection
 	collection := db.GetCollection(DB_COLLECTION_NAME__MESSAGE, DB_REF_NAME__MESSAGE)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -270,7 +269,7 @@ func GetTxsAndLogsByMessageType(msgType string, fromBlock, toBlock int64) (TxsLo
 		},
 	}
 
-	var txsLogs TxsLogs
+	var txsLogs []TxLogs
 
 	// aggregate pipeline
 	accCursor, err := collection.Aggregate(ctx, pipeline)
@@ -282,6 +281,6 @@ func GetTxsAndLogsByMessageType(msgType string, fromBlock, toBlock int64) (TxsLo
 	if err = accCursor.All(ctx, &txsLogs); err != nil {
 		return txsLogs, err
 	}
-	fmt.Println("ssssssssssssss")
+
 	return txsLogs, nil
 }

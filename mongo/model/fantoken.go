@@ -198,25 +198,27 @@ func SyncFantokens() error {
 		return err
 	}
 
-	for _, tx := range txsLogs.Tx {
-		for _, txlog := range tx.Log {
-			for _, evt := range txlog.Events {
-				switch evt.Type {
-				case "issue_fantoken":
-					denom := evt.Attributes[0].Value
+	for _, txLogs := range txsLogs {
+		for _, tx := range txLogs.Tx {
+			for _, txlog := range tx.Log {
+				for _, evt := range txlog.Events {
+					switch evt.Type {
+					case "issue_fantoken":
+						denom := evt.Attributes[0].Value
 
-					fantoken := new(Fantoken)
-					data := &FantokenCreate{
-						ChainID:  &txsLogs.ChainID,
-						Height:   &txsLogs.Height,
-						TxID:     &txsLogs.TxID,
-						Denom:    &denom,
-						Owner:    &txsLogs.Signer,
-						IssuedAt: &txsLogs.Time,
-					}
+						fantoken := new(Fantoken)
+						data := &FantokenCreate{
+							ChainID:  &txLogs.ChainID,
+							Height:   &txLogs.Height,
+							TxID:     &txLogs.TxID,
+							Denom:    &denom,
+							Owner:    &txLogs.Signer,
+							IssuedAt: &txLogs.Time,
+						}
 
-					if err := fantoken.Create(data); err != nil {
-						return err
+						if err := fantoken.Create(data); err != nil {
+							return err
+						}
 					}
 				}
 			}
@@ -229,7 +231,7 @@ func SyncFantokens() error {
 		return err
 	}
 
-	fmt.Printf("%d fantokens synced to block %d ", len(txsLogs.Tx), sync.Fantokens)
+	fmt.Printf("%d fantokens synced to block %d ", len(txsLogs), sync.Fantokens)
 
 	return nil
 }
