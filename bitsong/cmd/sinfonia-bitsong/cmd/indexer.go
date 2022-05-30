@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/angelorc/sinfonia-go/bitsong/chain"
-	"github.com/angelorc/sinfonia-go/bitsong/indexer"
+	"github.com/angelorc/sinfonia-go/indexer"
 	"github.com/angelorc/sinfonia-go/mongo/db"
 	"github.com/spf13/cobra"
 	"log"

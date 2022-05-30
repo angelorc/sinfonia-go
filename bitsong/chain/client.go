@@ -19,7 +19,11 @@ import (
 
 	"github.com/bitsongofficial/go-bitsong/app"
 	appparams "github.com/bitsongofficial/go-bitsong/app/params"
+
+	indexertypes "github.com/angelorc/sinfonia-go/indexer/types"
 )
+
+var _ indexertypes.ClientI = &Client{}
 
 type Client struct {
 	config *Config

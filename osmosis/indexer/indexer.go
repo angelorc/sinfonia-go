@@ -37,12 +37,12 @@ type IndexModules struct {
 }
 
 type Indexer struct {
-	client     *chain.Client
+	client     chain.ClientI
 	modules    *IndexModules
 	concurrent int
 }
 
-func NewIndexer(client *chain.Client, modules *IndexModules, concurrent int) *Indexer {
+func NewIndexer(client chain.ClientI, modules *IndexModules, concurrent int) *Indexer {
 	return &Indexer{
 		client:     client,
 		modules:    modules,

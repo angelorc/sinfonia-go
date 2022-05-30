@@ -4,19 +4,18 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/angelorc/sinfonia-go/indexer/types"
 	"github.com/angelorc/sinfonia-go/mongo/model"
 	"github.com/avast/retry-go"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/sync/errgroup"
 	"log"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/angelorc/sinfonia-go/bitsong/chain"
-	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 var (
@@ -34,12 +33,12 @@ type IndexModules struct {
 }
 
 type Indexer struct {
-	client     *chain.Client
+	client     types.ClientI
 	modules    *IndexModules
 	concurrent int
 }
 
-func NewIndexer(client *chain.Client, modules *IndexModules, concurrent int) *Indexer {
+func NewIndexer(client types.ClientI, modules *IndexModules, concurrent int) *Indexer {
 	return &Indexer{
 		client:     client,
 		modules:    modules,
@@ -60,6 +59,7 @@ func (i *Indexer) Parse(fromBlock, toBlock int64) {
 		}
 	}
 }
+
 func (i *Indexer) parseBlocks(blocks []int64, concurrent int, cb func(height int64) error) error {
 	fmt.Println("starting block queries for", i.client.ChainID())
 
@@ -150,6 +150,7 @@ func (i *Indexer) IndexTransactions(height int64) error {
 
 	return nil
 }
+
 func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height int64, txs tmtypes.Txs, time time.Time) {
 	for index, tx := range txs {
 		txTx, sdkTxRes, err := i.client.QueryTx(context.Background(), tx.Hash())
@@ -198,6 +199,7 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 		i.HandleLogs(sdkTxRes.Logs, txTx.GetMsgs(), height, tx.Hash(), time)
 	}
 }
+
 func (i *Indexer) HandleMsg(txID primitive.ObjectID, chainID string, msg sdk.Msg, msgIndex int, height int64, time time.Time) {
 	signer := i.client.MustEncodeAccAddr(msg.GetSigners()[0])
 
@@ -215,7 +217,69 @@ func (i *Indexer) HandleMsg(txID primitive.ObjectID, chainID string, msg sdk.Msg
 	if err != nil {
 		log.Fatalf("Failed to insert MsgSend - index (%d), height (%d), err: %s", msgIndex, height, err.Error())
 	}
+
+	/*switch m := msg.(type) {
+	case *banktypes.MsgSend:
+		err := i.InsertMsgSend(m.FromAddress, m.ToAddress, m.Amount.String(), hash, msgIndex, timestamp)
+		if err != nil {
+			log.Fatalf("Failed to insert MsgSend - index (%d), height (%d), err: %s", msgIndex, height, err.Error())
+		}
+
+	case *stakingtypes.MsgCreateValidator:
+	case *stakingtypes.MsgEditValidator:
+	case *stakingtypes.MsgDelegate:
+		err := i.InsertMsgDelegate(m.ValidatorAddress, m.DelegatorAddress, m.Amount.String(), hash, msgIndex, timestamp)
+		if err != nil {
+			log.Fatalf("Failed to insert MsgDelegate - index (%d), height (%d), err: %s", msgIndex, height, err.Error())
+		}
+
+	case *stakingtypes.MsgUndelegate:
+	case *stakingtypes.MsgBeginRedelegate:
+
+	case *distrtypes.MsgSetWithdrawAddress:
+	case *distrtypes.MsgWithdrawDelegatorReward:
+	case *distrtypes.MsgWithdrawValidatorCommission:
+	case *distrtypes.MsgFundCommunityPool:
+
+	case *fantokentypes.MsgIssueFanToken:
+		err := i.InsertMsgIssueFantoken(m.Name, m.Owner, m.MaxSupply.String(), m.Symbol, m.URI, hash, msgIndex, timestamp)
+		if err != nil {
+			log.Fatalf("Failed to insert MsgIssueFantoken - index (%d), height (%d), err: %s", msgIndex, height, err.Error())
+		}
+
+	case *fantokentypes.MsgEditFanToken:
+	case *fantokentypes.MsgMintFanToken:
+	case *fantokentypes.MsgBurnFanToken:
+	case *fantokentypes.MsgTransferFanTokenOwner:
+
+	case *ibcclienttypes.MsgCreateClient:
+	case *ibcclienttypes.MsgUpdateClient:
+	case *ibcclienttypes.MsgSubmitMisbehaviour:
+	case *ibcclienttypes.MsgUpgradeClient:
+
+	case *ibcconnectiontypes.MsgConnectionOpenInit:
+	case *ibcconnectiontypes.MsgConnectionOpenConfirm:
+	case *ibcconnectiontypes.MsgConnectionOpenAck:
+	case *ibcconnectiontypes.MsgConnectionOpenTry:
+
+	case *channeltypes.MsgChannelOpenInit:
+	case *channeltypes.MsgChannelOpenTry:
+	case *channeltypes.MsgChannelOpenAck:
+	case *channeltypes.MsgChannelOpenConfirm:
+	case *channeltypes.MsgChannelCloseInit:
+	case *channeltypes.MsgChannelCloseConfirm:
+	case *channeltypes.MsgRecvPacket:
+	case *channeltypes.MsgTimeout:
+	case *channeltypes.MsgAcknowledgement:
+
+	case *transfertypes.MsgTransfer:
+
+	default:
+		log.Fatalf("Unknown msg type: %s", sdk.MsgTypeURL(msg))
+	}*/
+
 }
+
 func (i *Indexer) HandleLogs(logs sdk.ABCIMessageLogs, msgs []sdk.Msg, height int64, hash []byte, timestamp time.Time) {
 	for index, mlog := range logs {
 		i.HandleEvents(mlog.Events, msgs[index], index, height, hash, timestamp)
@@ -243,19 +307,23 @@ func (i *Indexer) parseBlockResults(height int64, ts time.Time) error {
 
 	return nil
 }
+
 func (i *Indexer) HandleEvents(events sdk.StringEvents, msg sdk.Msg, msgIndex int, height int64, hash []byte, ts time.Time) {
 	for _, evt := range events {
 		switch evt.Type {
-		default:
-			// TODO:
+		//case gammtypes.TypeEvtTokenSwapped:
+		// i.handleTokenSwapped(height, hash, msgIndex, msg, evt.Attributes, ts)
+		//case gammtypes.TypeEvtPoolCreated:
+		// i.handlePoolCreated(height, hash, msgIndex, msg, evt.Attributes, ts)
 		}
 	}
 }
+
 func (i *Indexer) HandleBeginBlockEvents(height int64, events []abci.Event, ts time.Time) {
 	for _, evt := range events {
 		switch evt.Type {
-		default:
-			// TODO:
+		//case incentivetypes.TypeEvtDistribution:
+		// i.handleIncentives(height, evt.Attributes, ts)
 		}
 	}
 }

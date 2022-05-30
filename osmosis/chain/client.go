@@ -19,7 +19,11 @@ import (
 	"github.com/osmosis-labs/osmosis/v7/app"
 	appparams "github.com/osmosis-labs/osmosis/v7/app/params"
 	"google.golang.org/grpc"
+
+	"github.com/angelorc/sinfonia-go/indexer/types"
 )
+
+var _ types.ClientI = &Client{}
 
 type Client struct {
 	config *Config
@@ -119,4 +123,15 @@ func (c *Client) ParseTxFee(fees sdk.Coins) (string, string) {
 	}
 
 	return feeAmount, feeDenom
+}
+
+func (c *Client) EncodeBech32AccAddr(addr sdk.AccAddress) (string, error) {
+	return sdk.Bech32ifyAddressBytes(c.config.AccountPrefix, addr)
+}
+func (c *Client) MustEncodeAccAddr(addr sdk.AccAddress) string {
+	enc, err := c.EncodeBech32AccAddr(addr)
+	if err != nil {
+		panic(err)
+	}
+	return enc
 }

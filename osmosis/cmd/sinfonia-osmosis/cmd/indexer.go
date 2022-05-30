@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/angelorc/sinfonia-go/indexer"
 	"github.com/angelorc/sinfonia-go/mongo/db"
 	"github.com/angelorc/sinfonia-go/osmosis/chain"
-	"github.com/angelorc/sinfonia-go/osmosis/indexer"
 	"github.com/spf13/cobra"
 	"log"
 	"strconv"

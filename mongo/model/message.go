@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/angelorc/sinfonia-go/utility"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
@@ -203,4 +204,84 @@ func InsertMsg(data *MessageCreate) error {
 	}
 
 	return nil
+}
+
+// TxsLogs struct
+type TxsLogs struct {
+	Signer  string             `bson:"signer"`
+	Time    time.Time          `bson:"time"`
+	ChainID string             `json:"chain_id" bson:"chain_id" validate:"required"`
+	Height  int64              `json:"height" bson:"height" validate:"required"`
+	TxID    primitive.ObjectID `json:"tx_id" bson:"tx_id" validate:"required"`
+	Tx      []struct {
+		Log []struct {
+			Events []struct {
+				Type string `bson:"type"`
+
+				Attributes []struct {
+					Key   string `bson:"key"`
+					Value string `bson:"value"`
+				} `bson:"attributes"`
+			} `bson:"events"`
+		} `bson:"log"`
+	} `bson:"tx"`
+}
+
+func GetTxsAndLogsByMessageType(msgType string, fromBlock, toBlock int64) (TxsLogs, error) {
+	// collection
+	collection := db.GetCollection(DB_COLLECTION_NAME__MESSAGE, DB_REF_NAME__MESSAGE)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// pipeline
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{
+				"height": bson.M{
+					"$gt":  fromBlock,
+					"$lte": toBlock,
+				},
+			},
+		},
+		{
+			"$match": bson.M{
+				"msg_type": bson.M{
+					"$eq": msgType,
+				},
+			},
+		},
+		{
+			"$lookup": bson.M{
+				"from":         "transactions",
+				"localField":   "tx_id",
+				"foreignField": "_id",
+				"as":           "tx",
+			},
+		},
+		{
+			"$project": bson.M{
+				"chain_id":      1,
+				"height":        1,
+				"tx_id":         1,
+				"signer":        1,
+				"time":          1,
+				"tx.log.events": 1,
+			},
+		},
+	}
+
+	var txsLogs TxsLogs
+
+	// aggregate pipeline
+	accCursor, err := collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return txsLogs, err
+	}
+
+	// decode
+	if err = accCursor.All(ctx, &txsLogs); err != nil {
+		return txsLogs, err
+	}
+	fmt.Println("ssssssssssssss")
+	return txsLogs, nil
 }

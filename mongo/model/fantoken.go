@@ -181,6 +181,7 @@ func (f *Fantoken) Create(data *FantokenCreate) error {
  */
 
 func SyncFantokens() error {
+	// get last available height on db
 	lastBlock := GetLastHeight()
 
 	// get last block synced from account
@@ -192,109 +193,30 @@ func SyncFantokens() error {
 		sync.Fantokens = int64(0)
 	}
 
-	// collection
-	collection := db.GetCollection(DB_COLLECTION_NAME__MESSAGE, DB_REF_NAME__MESSAGE)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	// pipeline
-	pipeline := []bson.M{
-		{
-			"$match": bson.M{
-				"height": bson.M{
-					"$gt":  sync.Fantokens,
-					"$lte": lastBlock,
-				},
-			},
-		},
-		{
-			"$match": bson.M{
-				"msg_type": bson.M{
-					"$eq": "/bitsong.fantoken.MsgIssueFanToken",
-				},
-			},
-		},
-		{
-			"$lookup": bson.M{
-				"from":         "transactions",
-				"localField":   "tx_id",
-				"foreignField": "_id",
-				"as":           "tx",
-			},
-		},
-		{
-			"$project": bson.M{
-				"chain_id":      1,
-				"height":        1,
-				"tx_id":         1,
-				"signer":        1,
-				"time":          1,
-				"tx.log.events": 1,
-			},
-		},
-	}
-
-	// record struct
-	type attribute struct {
-		Key   string `bson:"key"`
-		Value string `bson:"value"`
-	}
-	type event struct {
-		Type       string      `bson:"type"`
-		Attributes []attribute `bson:"attributes"`
-	}
-	type txlog struct {
-		Events []event `bson:"events"`
-	}
-	type tx struct {
-		Log []txlog `bson:"log"`
-	}
-	type record struct {
-		Signer  string             `bson:"signer"`
-		Time    time.Time          `bson:"time"`
-		ChainID string             `json:"chain_id" bson:"chain_id" validate:"required"`
-		Height  int64              `json:"height" bson:"height" validate:"required"`
-		TxID    primitive.ObjectID `json:"tx_id" bson:"tx_id" validate:"required"`
-		Tx      []tx               `bson:"tx"`
-	}
-
-	// aggregate pipeline
-	accCursor, err := collection.Aggregate(ctx, pipeline)
+	txsLogs, err := GetTxsAndLogsByMessageType("/bitsong.fantoken.MsgIssueFanToken", sync.Fantokens, lastBlock)
 	if err != nil {
 		return err
 	}
 
-	// decode
-	var records []record
-	if err = accCursor.All(ctx, &records); err != nil {
-		return err
-	}
+	for _, tx := range txsLogs.Tx {
+		for _, txlog := range tx.Log {
+			for _, evt := range txlog.Events {
+				switch evt.Type {
+				case "issue_fantoken":
+					denom := evt.Attributes[0].Value
 
-	for _, r := range records {
-		for _, rtx := range r.Tx {
-			for _, rtxlog := range rtx.Log {
-				for _, evt := range rtxlog.Events {
-					denom := ""
-
-					switch evt.Type {
-					case "issue_fantoken":
-						denom = evt.Attributes[0].Value
+					fantoken := new(Fantoken)
+					data := &FantokenCreate{
+						ChainID:  &txsLogs.ChainID,
+						Height:   &txsLogs.Height,
+						TxID:     &txsLogs.TxID,
+						Denom:    &denom,
+						Owner:    &txsLogs.Signer,
+						IssuedAt: &txsLogs.Time,
 					}
 
-					if denom != "" {
-						fantoken := new(Fantoken)
-						data := &FantokenCreate{
-							ChainID:  &r.ChainID,
-							Height:   &r.Height,
-							TxID:     &r.TxID,
-							Denom:    &denom,
-							Owner:    &r.Signer,
-							IssuedAt: &r.Time,
-						}
-
-						if err := fantoken.Create(data); err != nil {
-							return err
-						}
+					if err := fantoken.Create(data); err != nil {
+						return err
 					}
 				}
 			}
@@ -307,7 +229,7 @@ func SyncFantokens() error {
 		return err
 	}
 
-	fmt.Println(fmt.Sprintf("%d fantokens synced to block %d ", len(records), sync.Fantokens))
+	fmt.Printf("%d fantokens synced to block %d ", len(txsLogs.Tx), sync.Fantokens)
 
 	return nil
 }
