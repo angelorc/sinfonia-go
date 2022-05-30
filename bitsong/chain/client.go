@@ -111,7 +111,7 @@ func (c *Client) DecodeTx(tx []byte) (sdk.Tx, error) {
 	return sdkTx, nil
 }
 
-func (c *Client) ParseTxFee(fees sdk.Coins) (string, string) {
+/*func (c *Client) ParseTxFee(fees sdk.Coins) (string, string) {
 	var feeAmount, feeDenom string
 
 	if len(fees) == 0 {
@@ -123,4 +123,4 @@ func (c *Client) ParseTxFee(fees sdk.Coins) (string, string) {
 	}
 
 	return feeAmount, feeDenom
-}
+}*/

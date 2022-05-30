@@ -2,27 +2,29 @@ package cmd
 
 import (
 	"github.com/angelorc/sinfonia-go/mongo/db"
-	"github.com/angelorc/sinfonia-go/mongo/model"
+	"github.com/angelorc/sinfonia-go/server"
 	"github.com/spf13/cobra"
 	"strconv"
 )
 
-func GetAccountCmd() *cobra.Command {
+func GetServerCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "account",
-		Short: "module account",
+		Use:   "server",
+		Short: "module server (rest & graphql)",
 	}
 
-	cmd.AddCommand(GetAccountSyncCmd())
+	cmd.AddCommand(
+		GetServerStartCmd(),
+	)
 
 	return cmd
 }
 
-func GetAccountSyncCmd() *cobra.Command {
+func GetServerStartCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "sync",
-		Short:   "sync accounts from latest blocks",
-		Example: "sinfonia account sync --mongo-dbname sinfonia-test",
+		Use:     "start",
+		Short:   "start server (rest & graphql)",
+		Example: "sinfonia server start --mongo-dbname sinfonia-test",
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			mongoURI, mongoDBName, mongoRetryWrites, err := parseMongoFlags(cmd)
@@ -42,9 +44,7 @@ func GetAccountSyncCmd() *cobra.Command {
 			defaultDB.Init()
 			defer defaultDB.Disconnect()
 
-			if err := model.SyncAccounts(); err != nil {
-				return err
-			}
+			server.Start()
 
 			return nil
 		},

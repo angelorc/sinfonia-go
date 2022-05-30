@@ -45,7 +45,7 @@ func (r *queryResolver) Transactions(ctx context.Context, where *simodel.Transac
 	return items, nil
 }
 
-func (r *queryResolver) TransactionCount(ctx context.Context, where *simodel.TransactionWhere, search *string) (*int, error) {
+func (r *queryResolver) TransactionCount(ctx context.Context, where *simodel.TransactionWhere) (*int, error) {
 	t := simodel.Transaction{}
 	if where == nil {
 		where = &simodel.TransactionWhere{}
@@ -66,7 +66,7 @@ func (r *queryResolver) Message(ctx context.Context, where *simodel.MessageWhere
 
 	item := simodel.Message{}
 	item.One(where)
-	if item.TxHash == "" {
+	if item.ChainID == "" {
 		return nil, nil
 	}
 	return &item, nil

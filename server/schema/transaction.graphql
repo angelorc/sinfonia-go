@@ -3,40 +3,55 @@
 
 type Transaction @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Transaction") {
     id: ObjectID!
+    block_id: ObjectID!
+    chain_id: String!
     height: Int!
     hash: String!
     code: Int
-    log: String
-    fee_amount: String
-    fee_denom: String
+    logs: [ABCIMessageLog]
+    fee: [Coin]
     gas_used: Int
     gas_wanted: Int
-    timestamp: Time!
+    time: Time!
+}
+
+type ABCIMessageLog @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.ABCIMessageLog") {
+    msg_index: Int
+    log: String
+    events: [StringEvent]
+}
+
+type StringEvent @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.StringEvent") {
+    type: String
+    attributes: [Attribute]
+}
+
+type Attribute @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Attribute") {
+    key: String
+    value: String
 }
 
 # ENUM
 ##########
 enum TransactionOrderByENUM @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.TransactionOrderByENUM") {
-    timestamp_ASC
-    timestamp_DESC
+    height_ASC
+    height_DESC
+    time_ASC
+    time_DESC
 }
 
 # DTO
 ##########
 
 # Read
-input TransactionWhereUnique @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.TransactionWhereUnique") {
-    id: ObjectID!
-}
-
 input TransactionWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.TransactionWhere") {
     id: ObjectID
+    block_id: ObjectID
+    chain_id: String
     height: Int
     hash: String
     code: Int
-    log: String
-    fee_amount: String
-    fee_denom: String
-    gas_used: Int
-    gas_wanted: Int
+    # fee: Fee
+    # gas: GasInput
+    time: Time
 }

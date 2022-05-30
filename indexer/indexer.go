@@ -164,25 +164,19 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 
 		txID := model.TxHashToObjectID(tx.Hash())
 		hashStr := hex.EncodeToString(tx.Hash())
-		feeAmt, feeDenom := i.client.ParseTxFee(txTx.GetFee())
 
 		data := &model.TransactionCreate{
-			ID:      &txID,
-			ChainID: &chainID,
-			Height:  height,
-			BlockID: &blockID,
-			Hash:    &hashStr,
-			Code:    sdkTxRes.Code,
-			Log:     sdkTxRes.Logs,
-			Fee: &model.Fee{
-				Amount: feeAmt,
-				Denom:  feeDenom,
-			},
-			Gas: &model.Gas{
-				Used:   sdkTxRes.GasUsed,
-				Wanted: sdkTxRes.GasWanted,
-			},
-			Time: time,
+			ID:        &txID,
+			ChainID:   &chainID,
+			Height:    height,
+			BlockID:   &blockID,
+			Hash:      &hashStr,
+			Code:      sdkTxRes.Code,
+			Logs:      ConvertABCIMessageLogs(sdkTxRes.Logs),
+			Fee:       ConvertCoins(txTx.GetFee()),
+			GasUsed:   &sdkTxRes.GasUsed,
+			GasWanted: &sdkTxRes.GasWanted,
+			Time:      time,
 		}
 
 		err = model.InsertTx(data)

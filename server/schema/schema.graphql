@@ -15,7 +15,7 @@ directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITI
 ##########
 scalar Time
 scalar ObjectID @goModel(model: "github.com/angelorc/sinfonia-go/server/scalar.ObjectIDScalar")
-scalar Json @goModel(model: "github.com/angelorc/sinfonia-go/server/scalar.JSONScalar")
+scalar JSON
 
 # QUERY
 ##########
@@ -36,7 +36,6 @@ type Query {
 
     transactionCount(
         where: TransactionWhere
-        search: String
     ): Int
 
     # Message

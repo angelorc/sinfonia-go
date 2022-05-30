@@ -1,0 +1,4 @@
+type Coin @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Coin") {
+    amount: String!
+    denom: String!
+}

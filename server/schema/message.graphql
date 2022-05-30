@@ -3,12 +3,13 @@
 
 type Message @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Message") {
     id: ObjectID!
+    chain_id: String!
     height: Int!
-    tx_hash: String!
+    tx_id: ObjectID!
     msg_index: Int!
     msg_type: String!
     signer: String!
-    timestamp: Time!
+    time: Time!
 }
 
 # ENUM
@@ -30,10 +31,11 @@ input MessageWhereUnique @goModel(model: "github.com/angelorc/sinfonia-go/mongo/
 
 input MessageWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.MessageWhere") {
     id: ObjectID
+    chain_id: String
     height: Int
-    tx_hash: String
+    tx_id: ObjectID
     msg_index: Int
     msg_type: String
     signer: String
-    timestamp: Time
+    time: Time
 }

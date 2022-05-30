@@ -15,6 +15,6 @@ type ClientI interface {
 	QueryTxFromString(ctx context.Context, hashHex string) (*tx.Tx, *sdk.TxResponse, error)
 	EncodeBech32AccAddr(addr sdk.AccAddress) (string, error)
 	MustEncodeAccAddr(addr sdk.AccAddress) string
-	ParseTxFee(fees sdk.Coins) (string, string)
+	// ParseTxFee(fees sdk.Coins) (string, string)
 	// DecodeTx(tx []byte) (sdk.Tx, error)
 }
