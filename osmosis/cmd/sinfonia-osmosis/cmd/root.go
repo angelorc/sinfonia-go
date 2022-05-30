@@ -25,6 +25,7 @@ func NewRootCmd() *cobra.Command {
 
 	rootCmd.AddCommand(
 		IndexerCmd(),
+		GetSyncCmd(),
 	)
 
 	return rootCmd

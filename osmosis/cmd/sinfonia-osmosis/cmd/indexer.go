@@ -11,15 +11,6 @@ import (
 	"strings"
 )
 
-const (
-	flagModules    = "modules"
-	flagConcurrent = "concurrent"
-
-	flagMongoUri    = "mongo-uri"
-	flagMongoDBName = "mongo-dbname"
-	flagMongoRetry  = "mongo-retry"
-)
-
 func IndexerCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "indexer",
@@ -64,7 +55,7 @@ func GetIndexerParserCmd() *cobra.Command {
 
 			client, err := chain.NewClient(chain.GetOsmosisConfig())
 			if err != nil {
-				log.Fatalf("failed to get RPC endpoints on chain %s. err: %v", "bitsong", err)
+				log.Fatalf("failed to get RPC endpoints on chain %s. err: %v", "osmosis", err)
 			}
 
 			fromBlock := int64(1)

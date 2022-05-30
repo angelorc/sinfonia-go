@@ -7,6 +7,7 @@ import (
 	"fmt"
 	tmcli "github.com/angelorc/sinfonia-go/tendermint"
 	"github.com/cosmos/cosmos-sdk/types/tx"
+	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
 	"google.golang.org/grpc/credentials"
 	"regexp"
 
@@ -30,7 +31,7 @@ type Client struct {
 	rpc    rpcclient.Client
 	grpc   *grpc.ClientConn
 	txSC   tx.ServiceClient
-	codec  appparams.EncodingConfig
+	Codec  appparams.EncodingConfig
 }
 
 func NewClient(config *Config) (*Client, error) {
@@ -57,7 +58,7 @@ func NewClient(config *Config) (*Client, error) {
 
 	return &Client{
 		config: config,
-		codec:  app.MakeEncodingConfig(),
+		Codec:  app.MakeEncodingConfig(),
 		rpc:    rpcClient,
 		grpc:   grpcConn,
 		txSC:   tx.NewServiceClient(grpcConn),
@@ -84,7 +85,7 @@ func (c *Client) QueryTx(ctx context.Context, hash []byte) (*tx.Tx, *sdk.TxRespo
 
 	for _, msg := range res.Tx.Body.Messages {
 		var stdMsg sdk.Msg
-		err = c.codec.Marshaler.UnpackAny(msg, &stdMsg)
+		err = c.Codec.Marshaler.UnpackAny(msg, &stdMsg)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error while unpacking message: %s", err)
 		}
@@ -103,12 +104,18 @@ func (c *Client) QueryTxFromString(ctx context.Context, hashHex string) (*tx.Tx,
 }
 
 func (c *Client) DecodeTx(tx []byte) (sdk.Tx, error) {
-	sdkTx, err := c.codec.TxConfig.TxDecoder()(tx)
+	sdkTx, err := c.Codec.TxConfig.TxDecoder()(tx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode tx. Err: %s \n", err.Error())
 	}
 
 	return sdkTx, nil
+}
+
+// APP Query
+
+func (c *Client) QueryPoolByID(poolID uint64) (*gammtypes.QueryPoolResponse, error) {
+	return gammtypes.NewQueryClient(c.grpc).Pool(context.Background(), &gammtypes.QueryPoolRequest{PoolId: poolID})
 }
 
 /*func (c *Client) ParseTxFee(fees sdk.Coins) (string, string) {
