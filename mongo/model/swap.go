@@ -30,8 +30,9 @@ var SEARCH_FILEDS__SWAP = []string{"pool_id", "tokens_in", "tokens_out"}
 
 type Swap struct {
 	ID       primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Height   int64              `json:"height" bson:"height"`
-	TxHash   string             `json:"tx_hash" bson:"tx_hash"`
+	ChainID  string             `json:"chain_id" bson:"chain_id" validate:"required"`
+	Height   int64              `json:"height" bson:"height" validate:"required"`
+	TxID     primitive.ObjectID `json:"tx_id" bson:"tx_id" validate:"required"`
 	MsgIndex int                `json:"msg_index" bson:"msg_index"`
 
 	PoolId    int64  `json:"pool_id" bson:"pool_id"`
@@ -40,7 +41,7 @@ type Swap struct {
 	Account   string `json:"account" bson:"account"`
 	Fee       string `json:"fee" bson:"fee"`
 
-	Timestamp time.Time `json:"timestamp,omitempty" bson:"timestamp,omitempty" validate:"required"`
+	Time time.Time `json:"time,omitempty" bson:"time,omitempty" validate:"required"`
 }
 
 /**
@@ -61,8 +62,9 @@ type SwapWhereUnique struct {
 
 type SwapWhere struct {
 	ID       *primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Height   *int64              `json:"height,omitempty" bson:"height,omitempty"`
-	TxHash   *string             `json:"tx_hash,omitempty" bson:"tx_hash,omitempty"`
+	ChainID  *string             `json:"chain_id" bson:"chain_id" validate:"required"`
+	Height   *int64              `json:"height" bson:"height" validate:"required"`
+	TxID     *primitive.ObjectID `json:"tx_id" bson:"tx_id" validate:"required"`
 	MsgIndex *int                `json:"msg_index,omitempty" bson:"msg_index,omitempty"`
 
 	PoolId    *int64  `json:"pool_id,omitempty" bson:"pool_id,omitempty"`
@@ -71,16 +73,16 @@ type SwapWhere struct {
 	Account   *string `json:"account,omitempty" bson:"account,omitempty"`
 	Fee       *string `json:"fee,omitempty" bson:"fee,omitempty"`
 
-	Timestamp *time.Time `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
-	OR        []bson.M   `json:"$or,omitempty" bson:"$or,omitempty"`
+	OR []bson.M `json:"$or,omitempty" bson:"$or,omitempty"`
 }
 
 // Write
 
 type SwapCreate struct {
 	ID       *primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Height   *int64              `json:"height,omitempty" bson:"height"`
-	TxHash   *string             `json:"tx_hash" bson:"tx_hash" validate:"required"`
+	ChainID  *string             `json:"chain_id" bson:"chain_id" validate:"required"`
+	Height   *int64              `json:"height" bson:"height" validate:"required"`
+	TxID     *primitive.ObjectID `json:"tx_id" bson:"tx_id" validate:"required"`
 	MsgIndex *int                `json:"msg_index" bson:"msg_index" validate:"required"`
 
 	PoolId    *int64  `json:"pool_id" bson:"pool_id"`
@@ -89,7 +91,7 @@ type SwapCreate struct {
 	Account   *string `json:"account" bson:"account"`
 	Fee       *string `json:"fee" bson:"fee"`
 
-	Timestamp time.Time `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
+	Time time.Time `json:"time,omitempty" bson:"time,omitempty" validate:"required"`
 }
 
 /**
@@ -172,18 +174,18 @@ func (m *Swap) Create(data *SwapCreate) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// TODO: check unique
+	// TODO: checkPools unique
 	item := new(Swap)
 	f := bson.M{
 		"$and": []bson.M{
 			{"height": data.Height},
-			{"tx_hash": data.TxHash},
+			{"tx_id": data.TxID},
 			{"msg_index": data.MsgIndex},
 			{"pool_id": data.PoolId},
 		},
 	}
 	collection.FindOne(ctx, f).Decode(&item)
-	if item.TxHash != "" {
+	if item.ChainID != "" {
 		return nil
 	}
 

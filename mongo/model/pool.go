@@ -30,8 +30,9 @@ var SEARCH_FILEDS__POOL = []string{"pool_id"}
 
 type Pool struct {
 	ID       primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Height   int64              `json:"height" bson:"height"`
-	TxHash   string             `json:"tx_hash" bson:"tx_hash"`
+	ChainID  string             `json:"chain_id" bson:"chain_id" validate:"required"`
+	Height   int64              `json:"height" bson:"height" validate:"required"`
+	TxID     primitive.ObjectID `json:"tx_id" bson:"tx_id" validate:"required"`
 	MsgIndex int                `json:"msg_index" bson:"msg_index"`
 
 	PoolID     int64       `json:"pool_id" bson:"pool_id" validate:"required"`
@@ -39,7 +40,7 @@ type Pool struct {
 	SwapFee    string      `json:"swap_fee" bson:"swap_fee" validate:"required"`
 	ExitFee    string      `json:"exit_fee" bson:"exit_fee"`
 	Sender     string      `json:"sender" bson:"sender" validate:"required"`
-	Timestamp  time.Time   `json:"timestamp,omitempty" bson:"timestamp,omitempty" validate:"required"`
+	Time       time.Time   `json:"time,omitempty" bson:"time,omitempty" validate:"required"`
 }
 
 type PoolAsset struct {
@@ -65,8 +66,9 @@ type PoolWhereUnique struct {
 
 type PoolWhere struct {
 	ID       *primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	ChainID  *string             `json:"chain_id,omitempty" bson:"chain_id,omitempty"`
 	Height   *int64              `json:"height,omitempty" bson:"height,omitempty"`
-	TxHash   *string             `json:"tx_hash,omitempty" bson:"tx_hash,omitempty"`
+	TxID     *primitive.ObjectID `json:"tx_id,omitempty" bson:"tx_id,omitempty"`
 	MsgIndex *int                `json:"msg_index,omitempty" bson:"msg_index,omitempty"`
 
 	PoolID     *int64            `json:"pool_id,omitempty" bson:"pool_id,omitempty"`
@@ -83,8 +85,9 @@ type PoolAssetWhere struct {
 
 type PoolCreate struct {
 	ID       *primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Height   *int64              `json:"height,omitempty" bson:"height"`
-	TxHash   *string             `json:"tx_hash" bson:"tx_hash" validate:"required"`
+	ChainID  *string             `json:"chain_id" bson:"chain_id" validate:"required"`
+	Height   *int64              `json:"height" bson:"height" validate:"required"`
+	TxID     *primitive.ObjectID `json:"tx_id" bson:"tx_id" validate:"required"`
 	MsgIndex *int                `json:"msg_index" bson:"msg_index" validate:"required"`
 
 	PoolID     uint64      `json:"pool_id" bson:"pool_id" validate:"required"`
@@ -92,7 +95,7 @@ type PoolCreate struct {
 	SwapFee    string      `json:"swap_fee" bson:"swap_fee" validate:"required"`
 	ExitFee    string      `json:"exit_fee" bson:"exit_fee"`
 	Sender     string      `json:"sender" bson:"sender" validate:"required"`
-	Timestamp  time.Time   `json:"timestamp,omitempty" bson:"timestamp,omitempty" validate:"required"`
+	Time       time.Time   `json:"time,omitempty" bson:"time,omitempty" validate:"required"`
 }
 
 /**

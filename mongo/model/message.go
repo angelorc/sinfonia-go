@@ -207,22 +207,21 @@ func InsertMsg(data *MessageCreate) error {
 
 // TxLogs struct
 type TxLogs struct {
-	Signer  string             `bson:"signer"`
-	Time    time.Time          `bson:"time"`
-	ChainID string             `json:"chain_id" bson:"chain_id" validate:"required"`
-	Height  int64              `json:"height" bson:"height" validate:"required"`
-	TxID    primitive.ObjectID `json:"tx_id" bson:"tx_id" validate:"required"`
-	Tx      []struct {
-		Log []struct {
+	Signer   string             `bson:"signer"`
+	Time     time.Time          `bson:"time"`
+	ChainID  string             `json:"chain_id" bson:"chain_id" validate:"required"`
+	Height   int64              `json:"height" bson:"height" validate:"required"`
+	MsgIndex int                `json:"msg_index" bson:"msg_index"`
+	MsgType  string             `json:"msg_type" bson:"msg_type"`
+	TxID     primitive.ObjectID `json:"tx_id" bson:"tx_id" validate:"required"`
+	Tx       struct {
+		Logs []struct {
 			Events []struct {
 				Type string `bson:"type"`
 
-				Attributes []struct {
-					Key   string `bson:"key"`
-					Value string `bson:"value"`
-				} `bson:"attributes"`
+				Attributes []Attribute `bson:"attributes"`
 			} `bson:"events"`
-		} `bson:"log"`
+		} `bson:"logs"`
 	} `bson:"tx"`
 }
 
@@ -258,13 +257,20 @@ func GetTxsAndLogsByMessageType(msgType string, fromBlock, toBlock int64) ([]TxL
 			},
 		},
 		{
+			"$unwind": bson.M{
+				"path": "$tx",
+			},
+		},
+		{
 			"$project": bson.M{
-				"chain_id":      1,
-				"height":        1,
-				"tx_id":         1,
-				"signer":        1,
-				"time":          1,
-				"tx.log.events": 1,
+				"chain_id":       1,
+				"height":         1,
+				"tx_id":          1,
+				"msg_index":      1,
+				"msg_type":       1,
+				"signer":         1,
+				"time":           1,
+				"tx.logs.events": 1,
 			},
 		},
 	}

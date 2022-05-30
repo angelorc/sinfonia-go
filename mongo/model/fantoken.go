@@ -199,26 +199,24 @@ func SyncFantokens() error {
 	}
 
 	for _, txLogs := range txsLogs {
-		for _, tx := range txLogs.Tx {
-			for _, txlog := range tx.Log {
-				for _, evt := range txlog.Events {
-					switch evt.Type {
-					case "issue_fantoken":
-						denom := evt.Attributes[0].Value
+		for _, txlog := range txLogs.Tx.Logs {
+			for _, evt := range txlog.Events {
+				switch evt.Type {
+				case "issue_fantoken":
+					denom := evt.Attributes[0].Value
 
-						fantoken := new(Fantoken)
-						data := &FantokenCreate{
-							ChainID:  &txLogs.ChainID,
-							Height:   &txLogs.Height,
-							TxID:     &txLogs.TxID,
-							Denom:    &denom,
-							Owner:    &txLogs.Signer,
-							IssuedAt: &txLogs.Time,
-						}
+					fantoken := new(Fantoken)
+					data := &FantokenCreate{
+						ChainID:  &txLogs.ChainID,
+						Height:   &txLogs.Height,
+						TxID:     &txLogs.TxID,
+						Denom:    &denom,
+						Owner:    &txLogs.Signer,
+						IssuedAt: &txLogs.Time,
+					}
 
-						if err := fantoken.Create(data); err != nil {
-							return err
-						}
+					if err := fantoken.Create(data); err != nil {
+						return err
 					}
 				}
 			}
