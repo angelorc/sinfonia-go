@@ -4,6 +4,11 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"log"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/angelorc/sinfonia-go/indexer/types"
 	"github.com/angelorc/sinfonia-go/mongo/model"
 	"github.com/avast/retry-go"
@@ -12,10 +17,6 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/sync/errgroup"
-	"log"
-	"strings"
-	"sync"
-	"time"
 )
 
 var (
@@ -159,7 +160,7 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 		}
 
 		if sdkTxRes.Code > 0 {
-			return
+			continue
 		}
 
 		txID := model.TxHashToObjectID(tx.Hash())
