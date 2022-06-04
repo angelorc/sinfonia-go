@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"errors"
+	"github.com/angelorc/sinfonia-go/server/scalar"
 	"github.com/angelorc/sinfonia-go/utility"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
@@ -37,6 +38,7 @@ type Message struct {
 	TxID     primitive.ObjectID `json:"tx_id" bson:"tx_id" validate:"required"`
 	MsgIndex *int               `json:"msg_index" bson:"msg_index"`
 	MsgType  string             `json:"msg_type" bson:"msg_type"`
+	MsgValue scalar.JSON        `json:"msg_value" bson:"msg_value"`
 	Signer   string             `json:"signer" bson:"signer"`
 	Time     time.Time          `json:"time,omitempty" bson:"time,omitempty" validate:"required"`
 }
@@ -64,6 +66,7 @@ type MessageWhere struct {
 	TxID     *primitive.ObjectID `json:"tx_id,omitempty" bson:"tx_id,omitempty"`
 	MsgIndex *int                `json:"msg_index,omitempty" bson:"msg_index,omitempty"`
 	MsgType  *string             `json:"msg_type,omitempty" bson:"msg_type,omitempty"`
+	MsgValue *scalar.JSON        `json:"msg_value,omitempty" bson:"msg_value,omitempty"`
 	Signer   *string             `json:"signer,omitempty" bson:"signer,omitempty"`
 	Time     *time.Time          `json:"time,omitempty" bson:"time,omitempty"`
 	OR       *[]bson.M           `json:"$or,omitempty" bson:"$or,omitempty"`
@@ -78,6 +81,7 @@ type MessageCreate struct {
 	TxID     *primitive.ObjectID `json:"tx_id" bson:"tx_id" validate:"required"`
 	MsgIndex *int                `json:"msg_index" bson:"msg_index" validate:"required"`
 	MsgType  *string             `json:"msg_type" bson:"msg_type" validate:"required"`
+	MsgValue *scalar.JSON        `json:"msg_value" bson:"msg_value" validate:"required"`
 	Signer   *string             `json:"signer" bson:"signer" validate:"required"`
 	Time     time.Time           `json:"time" bson:"time" validate:"required"`
 }

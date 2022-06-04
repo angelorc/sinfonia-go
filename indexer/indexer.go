@@ -3,11 +3,14 @@ package indexer
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/angelorc/sinfonia-go/indexer/types"
 	"github.com/angelorc/sinfonia-go/mongo/model"
+	"github.com/angelorc/sinfonia-go/server/scalar"
 	"github.com/avast/retry-go"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/gogo/protobuf/jsonpb"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -159,7 +162,7 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 		}
 
 		if sdkTxRes.Code > 0 {
-			return
+			continue
 		}
 
 		txID := model.TxHashToObjectID(tx.Hash())
@@ -197,17 +200,36 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 func (i *Indexer) HandleMsg(txID primitive.ObjectID, chainID string, msg sdk.Msg, msgIndex int, height int64, time time.Time) {
 	signer := i.client.MustEncodeAccAddr(msg.GetSigners()[0])
 
+	marshaler := jsonpb.Marshaler{
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+		Indent:       "  ",
+		OrigName:     true,
+	}
+
 	msgType := sdk.MsgTypeURL(msg)
+	msgValueStr, err := marshaler.MarshalToString(msg)
+	if err != nil {
+		log.Fatalf("Failed to marshal msg - index (%d), height (%d), err: %s", msgIndex, height, err.Error())
+	}
+
+	var msgValue scalar.JSON
+	err = json.Unmarshal([]byte(msgValueStr), &msgValue)
+	if err != nil {
+		log.Fatalf("Failed to marshaljson msg  - index (%d), height (%d), err: %s", msgIndex, height, err.Error())
+	}
+
 	data := &model.MessageCreate{
 		TxID:     &txID,
 		Height:   &height,
 		ChainID:  &chainID,
 		MsgIndex: &msgIndex,
 		MsgType:  &msgType,
+		MsgValue: &msgValue,
 		Signer:   &signer,
 		Time:     time,
 	}
-	err := model.InsertMsg(data)
+	err = model.InsertMsg(data)
 	if err != nil {
 		log.Fatalf("Failed to insert MsgSend - index (%d), height (%d), err: %s", msgIndex, height, err.Error())
 	}

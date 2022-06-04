@@ -39,7 +39,11 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Pool() PoolResolver
 	Query() QueryResolver
+	Swap() SwapResolver
+	PoolWhere() PoolWhereResolver
+	SwapWhere() SwapWhereResolver
 }
 
 type DirectiveRoot struct {
@@ -167,6 +171,11 @@ type ComplexityRoot struct {
 	}
 }
 
+type PoolResolver interface {
+	TxHash(ctx context.Context, obj *model.Pool) (string, error)
+
+	Timestamp(ctx context.Context, obj *model.Pool) (*time.Time, error)
+}
 type QueryResolver interface {
 	Transaction(ctx context.Context, where *model.TransactionWhere) (*model.Transaction, error)
 	Transactions(ctx context.Context, where *model.TransactionWhere, in []*primitive.ObjectID, orderBy *model.TransactionOrderByENUM, skip *int, limit *int) ([]*model.Transaction, error)
@@ -186,6 +195,20 @@ type QueryResolver interface {
 	Pool(ctx context.Context, where *model.PoolWhere) (*model.Pool, error)
 	Pools(ctx context.Context, where *model.PoolWhere, in []*primitive.ObjectID, orderBy *model.PoolOrderByENUM, skip *int, limit *int) ([]*model.Pool, error)
 	PoolCount(ctx context.Context, where *model.PoolWhere) (*int, error)
+}
+type SwapResolver interface {
+	TxHash(ctx context.Context, obj *model.Swap) (string, error)
+
+	Timestamp(ctx context.Context, obj *model.Swap) (*time.Time, error)
+}
+
+type PoolWhereResolver interface {
+	TxHash(ctx context.Context, obj *model.PoolWhere, data *string) error
+}
+type SwapWhereResolver interface {
+	TxHash(ctx context.Context, obj *model.SwapWhere, data *string) error
+
+	Timestamp(ctx context.Context, obj *model.SwapWhere, data *time.Time) error
 }
 
 type executableSchema struct {
@@ -3196,7 +3219,7 @@ func (ec *executionContext) _Pool_tx_hash(ctx context.Context, field graphql.Col
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.TxHash, nil
+		return ec.resolvers.Pool().TxHash(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3217,8 +3240,8 @@ func (ec *executionContext) fieldContext_Pool_tx_hash(ctx context.Context, field
 	fc = &graphql.FieldContext{
 		Object:     "Pool",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -3507,7 +3530,7 @@ func (ec *executionContext) _Pool_timestamp(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Timestamp, nil
+		return ec.resolvers.Pool().Timestamp(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3519,17 +3542,17 @@ func (ec *executionContext) _Pool_timestamp(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.(time.Time)
+	res := resTmp.(*time.Time)
 	fc.Result = res
-	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+	return ec.marshalNTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Pool_timestamp(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Pool",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -5122,7 +5145,7 @@ func (ec *executionContext) _Swap_tx_hash(ctx context.Context, field graphql.Col
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.TxHash, nil
+		return ec.resolvers.Swap().TxHash(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5143,8 +5166,8 @@ func (ec *executionContext) fieldContext_Swap_tx_hash(ctx context.Context, field
 	fc = &graphql.FieldContext{
 		Object:     "Swap",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -5430,7 +5453,7 @@ func (ec *executionContext) _Swap_timestamp(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Timestamp, nil
+		return ec.resolvers.Swap().Timestamp(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5442,17 +5465,17 @@ func (ec *executionContext) _Swap_timestamp(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.(time.Time)
+	res := resTmp.(*time.Time)
 	fc.Result = res
-	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+	return ec.marshalNTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Swap_timestamp(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Swap",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -8041,8 +8064,11 @@ func (ec *executionContext) unmarshalInputPoolWhere(ctx context.Context, obj int
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tx_hash"))
-			it.TxHash, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
+				return it, err
+			}
+			if err = ec.resolvers.PoolWhere().TxHash(ctx, &it, data); err != nil {
 				return it, err
 			}
 		case "msg_index":
@@ -8127,8 +8153,11 @@ func (ec *executionContext) unmarshalInputSwapWhere(ctx context.Context, obj int
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tx_hash"))
-			it.TxHash, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
+				return it, err
+			}
+			if err = ec.resolvers.SwapWhere().TxHash(ctx, &it, data); err != nil {
 				return it, err
 			}
 		case "msg_index":
@@ -8183,8 +8212,11 @@ func (ec *executionContext) unmarshalInputSwapWhere(ctx context.Context, obj int
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timestamp"))
-			it.Timestamp, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
 			if err != nil {
+				return it, err
+			}
+			if err = ec.resolvers.SwapWhere().Timestamp(ctx, &it, data); err != nil {
 				return it, err
 			}
 		}
@@ -8620,35 +8652,48 @@ func (ec *executionContext) _Pool(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._Pool_id(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "height":
 
 			out.Values[i] = ec._Pool_height(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "tx_hash":
+			field := field
 
-			out.Values[i] = ec._Pool_tx_hash(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Pool_tx_hash(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "msg_index":
 
 			out.Values[i] = ec._Pool_msg_index(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "pool_id":
 
 			out.Values[i] = ec._Pool_pool_id(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "pool_assets":
 
@@ -8659,29 +8704,42 @@ func (ec *executionContext) _Pool(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._Pool_swap_fee(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "exit_fee":
 
 			out.Values[i] = ec._Pool_exit_fee(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "sender":
 
 			out.Values[i] = ec._Pool_sender(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "timestamp":
+			field := field
 
-			out.Values[i] = ec._Pool_timestamp(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Pool_timestamp(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9192,71 +9250,97 @@ func (ec *executionContext) _Swap(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._Swap_id(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "height":
 
 			out.Values[i] = ec._Swap_height(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "tx_hash":
+			field := field
 
-			out.Values[i] = ec._Swap_tx_hash(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Swap_tx_hash(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "msg_index":
 
 			out.Values[i] = ec._Swap_msg_index(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "pool_id":
 
 			out.Values[i] = ec._Swap_pool_id(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "tokens_in":
 
 			out.Values[i] = ec._Swap_tokens_in(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "tokens_out":
 
 			out.Values[i] = ec._Swap_tokens_out(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "account":
 
 			out.Values[i] = ec._Swap_account(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "fee":
 
 			out.Values[i] = ec._Swap_fee(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "timestamp":
+			field := field
 
-			out.Values[i] = ec._Swap_timestamp(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Swap_timestamp(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9962,6 +10046,27 @@ func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v in
 
 func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel ast.SelectionSet, v time.Time) graphql.Marshaler {
 	res := graphql.MarshalTime(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNTime2ᚖtimeᚐTime(ctx context.Context, v interface{}) (*time.Time, error) {
+	res, err := graphql.UnmarshalTime(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	res := graphql.MarshalTime(*v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
