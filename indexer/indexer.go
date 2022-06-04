@@ -5,6 +5,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/angelorc/sinfonia-go/indexer/types"
 	"github.com/angelorc/sinfonia-go/mongo/model"
 	"github.com/angelorc/sinfonia-go/server/scalar"
@@ -15,10 +20,6 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/sync/errgroup"
-	"log"
-	"strings"
-	"sync"
-	"time"
 )
 
 var (
