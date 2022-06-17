@@ -11,6 +11,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
 	"strconv"
+	"strings"
+	"time"
 )
 
 func GetSyncCmd() *cobra.Command {
@@ -201,7 +203,7 @@ func convertPoolAssetsToModel(pa []types.PoolAsset) []model.PoolAsset {
 	return newPoolAssets
 }
 
-func getAttrValueByKey(key string, attrs []model.Attribute) string {
+/*func getAttrValueByKey(key string, attrs []model.Attribute) string {
 	for _, attr := range attrs {
 		if key == attr.Key {
 			return attr.Value
@@ -209,6 +211,53 @@ func getAttrValueByKey(key string, attrs []model.Attribute) string {
 	}
 
 	return ""
+}*/
+
+func parseAttrs(attrs []model.Attribute) (poolID int64, tokensIn, tokensOut string) {
+	for _, attr := range attrs {
+		switch attr.Key {
+		case "pool_id":
+			poolID, _ = strconv.ParseInt(attr.Value, 0, 64)
+		case "tokens_in":
+			tokensIn = attr.Value
+		case "tokens_out":
+			tokensOut = attr.Value
+		}
+	}
+	return poolID, tokensIn, tokensOut
+}
+
+func calcVolumeUSD(tokensIn, tokensOut string, ts time.Time) float64 {
+	ibcDenom := "ibc/8B066EED78CCC6A90E963C81EB4B527C28FE538BE396B8756F4C4BFC53C74221"
+	amtBTSG := int64(0)
+
+	if strings.HasSuffix(tokensIn, ibcDenom) {
+		amt := strings.Replace(tokensIn, ibcDenom, "", -1)
+		amtBTSG, _ = strconv.ParseInt(amt, 0, 64)
+	}
+
+	if strings.HasSuffix(tokensOut, ibcDenom) {
+		amt := strings.Replace(tokensOut, ibcDenom, "", -1)
+		amtBTSG, _ = strconv.ParseInt(amt, 0, 64)
+	}
+
+	prices := make(map[string]float64)
+	prices["09-05-2022"] = 0.04840136619600178
+	prices["10-05-2022"] = 0.039866432548801504
+	prices["11-05-2022"] = 0.03766485405081663
+	prices["12-05-2022"] = 0.033936829238417024
+	prices["13-05-2022"] = 0.02447988666488955
+	prices["14-05-2022"] = 0.022366606595902307
+	prices["15-05-2022"] = 0.02193695925498291
+	prices["16-05-2022"] = 0.025348193585375472
+	prices["17-05-2022"] = 0.02257440395770441
+	prices["18-05-2022"] = 0.02299961941622652
+	prices["19-05-2022"] = 0.020301519267571042
+
+	volume := (float64(amtBTSG) * 0.000001) * prices[ts.Format("02-01-2006")]
+
+	//return fmt.Sprintf("%f", volume)
+	return volume
 }
 
 func syncSwaps() error {
@@ -234,14 +283,7 @@ func syncSwaps() error {
 			for _, evt := range txlog.Events {
 				switch evt.Type {
 				case "token_swapped":
-
-					poolID, err := strconv.ParseInt(getAttrValueByKey("pool_id", evt.Attributes), 0, 64)
-					if err != nil {
-						return fmt.Errorf("error while parsing poolID, err: %s", err.Error())
-					}
-
-					tokensIn := getAttrValueByKey("tokens_in", evt.Attributes)
-					tokensOut := getAttrValueByKey("tokens_out", evt.Attributes)
+					poolID, tokensIn, tokensOut := parseAttrs(evt.Attributes)
 
 					pool := new(model.Pool)
 					pool.One(
@@ -251,6 +293,29 @@ func syncSwaps() error {
 					)
 
 					fee := calcFee(tokensIn, pool.SwapFee)
+					volume := calcVolumeUSD(tokensIn, tokensOut, txLogs.Time)
+
+					// get volume by day
+					// {
+					//    _id: {
+					//      date: {$dateToString: { format: "%Y-%m-%d", date: "$time" }},
+					//    },
+					//    volume: {$sum: "$volume"}
+					// }
+					// {
+					//   "_id.date": 1
+					// }
+
+					// get volume by pool
+					// {
+					//    _id: {
+					//      pool: "$pool_id",
+					//    },
+					//    volume: {$sum: "$volume"}
+					// }
+					// {
+					//   "_id.volume": -1
+					// }
 
 					swapModel := new(model.Swap)
 					data := &model.SwapCreate{
@@ -263,6 +328,7 @@ func syncSwaps() error {
 						TokensOut: &tokensOut,
 						Account:   &txLogs.Signer,
 						Fee:       &fee,
+						Volume:    &volume,
 						Time:      txLogs.Time,
 					}
 

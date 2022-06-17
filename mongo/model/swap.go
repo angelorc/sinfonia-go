@@ -35,11 +35,12 @@ type Swap struct {
 	TxID     primitive.ObjectID `json:"tx_id" bson:"tx_id" validate:"required"`
 	MsgIndex int                `json:"msg_index" bson:"msg_index"`
 
-	PoolId    int64  `json:"pool_id" bson:"pool_id"`
-	TokensIn  string `json:"tokens_in" bson:"tokens_in"`
-	TokensOut string `json:"tokens_out" bson:"tokens_out"`
-	Account   string `json:"account" bson:"account"`
-	Fee       string `json:"fee" bson:"fee"`
+	PoolId    int64   `json:"pool_id" bson:"pool_id"`
+	TokensIn  string  `json:"tokens_in" bson:"tokens_in"`
+	TokensOut string  `json:"tokens_out" bson:"tokens_out"`
+	Account   string  `json:"account" bson:"account"`
+	Fee       string  `json:"fee" bson:"fee"`
+	Volume    float64 `json:"volume" bson:"volume"`
 
 	Time time.Time `json:"time,omitempty" bson:"time,omitempty" validate:"required"`
 }
@@ -85,11 +86,12 @@ type SwapCreate struct {
 	TxID     *primitive.ObjectID `json:"tx_id" bson:"tx_id" validate:"required"`
 	MsgIndex *int                `json:"msg_index" bson:"msg_index" validate:"required"`
 
-	PoolId    *int64  `json:"pool_id" bson:"pool_id"`
-	TokensIn  *string `json:"tokens_in" bson:"tokens_in"`
-	TokensOut *string `json:"tokens_out" bson:"tokens_out"`
-	Account   *string `json:"account" bson:"account"`
-	Fee       *string `json:"fee" bson:"fee"`
+	PoolId    *int64   `json:"pool_id" bson:"pool_id"`
+	TokensIn  *string  `json:"tokens_in" bson:"tokens_in"`
+	TokensOut *string  `json:"tokens_out" bson:"tokens_out"`
+	Account   *string  `json:"account" bson:"account"`
+	Fee       *string  `json:"fee" bson:"fee"`
+	Volume    *float64 `json:"volume" bson:"volume"`
 
 	Time time.Time `json:"time,omitempty" bson:"time,omitempty" validate:"required"`
 }
