@@ -1,5 +1,7 @@
 # DIRECTIVE
 ##########
+directive @auth on FIELD_DEFINITION
+
 directive @goModel(model: String, models: [String!]) on OBJECT
     | INPUT_OBJECT
     | SCALAR
@@ -16,6 +18,7 @@ directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITI
 scalar Time
 scalar ObjectID @goModel(model: "github.com/angelorc/sinfonia-go/server/scalar.ObjectIDScalar")
 scalar JSON
+scalar Upload
 
 # QUERY
 ##########
@@ -74,6 +77,60 @@ type Query {
         where: AccountWhere
     ): Int
 
+    # Fantoken
+    ##########
+    fantoken(
+        where: FantokenWhere
+    ): Fantoken
+
+    fantokens(
+        where: FantokenWhere
+        in: [ObjectID]
+        orderBy: FantokenOrderByENUM
+        skip: Int
+        limit: Int
+    ): [Fantoken]!
+
+    fantokenCount(
+        where: FantokenWhere
+    ): Int
+
+    # Merkledrop
+    ##########
+    merkledrop(
+        where: MerkledropWhere
+    ): Merkledrop
+
+    merkledrops(
+        where: MerkledropWhere
+        in: [ObjectID]
+        orderBy: MerkledropOrderByENUM
+        skip: Int
+        limit: Int
+    ): [Merkledrop]!
+
+    merkledropCount(
+        where: MerkledropWhere
+    ): Int
+
+    # MerkledropProof
+    ##########
+    merkledropProof(
+        where: MerkledropProofWhere
+    ): MerkledropProof
+
+    merkledropProofs(
+        where: MerkledropProofWhere
+        in: [ObjectID]
+        orderBy: MerkledropProofOrderByENUM
+        skip: Int
+        limit: Int
+    ): [MerkledropProof]!
+
+    merkledropProofCount(
+        where: MerkledropProofWhere
+    ): Int @auth
+
     # Incentive
     ##########
     incentive(
@@ -127,4 +184,13 @@ type Query {
     poolCount(
         where: PoolWhere
     ): Int
+}
+
+type Mutation {
+    # MerkledropProof
+    ##########
+    merkledropProofsStoreList(
+        id: Int,
+        file: Upload!
+    ): Int!
 }

@@ -1,0 +1,42 @@
+# MODEL
+##########
+
+type Fantoken @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Fantoken") {
+    id: ObjectID!
+    chain_id: String!
+    height: Int!
+    tx_id: ObjectID!
+    # msg_index: Int!
+
+    denom: String!
+    owner: String!
+    issued_at: Time!
+}
+
+# ENUM
+##########
+enum FantokenOrderByENUM @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.FantokenOrderByENUM") {
+    timestamp_ASC
+    timestamp_DESC
+    height_ASC
+    height_DESC
+}
+
+# DTO
+##########
+
+# Read
+# input FantokenWhereUnique @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.FantokenWhereUnique") {
+#     id: ObjectID!
+# }
+
+input FantokenWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.FantokenWhere") {
+    id: ObjectID
+    height: Int
+    chain_id: String
+    tx_id: ObjectID
+    # msg_index: Int
+
+    denom: String
+    owner: String
+}

@@ -3,8 +3,9 @@
 
 type Swap @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Swap") {
     id: ObjectID!
+    chain_id: String!
     height: Int!
-    tx_hash: String!
+    tx_id: ObjectID!
     msg_index: Int!
 
     pool_id: Int!
@@ -12,8 +13,9 @@ type Swap @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Swap") {
     tokens_out: String!
     account: String!
     fee: String!
+    volume: Float!
 
-    timestamp: Time!
+    time: Time!
 }
 
 # ENUM
@@ -36,7 +38,8 @@ input SwapWhereUnique @goModel(model: "github.com/angelorc/sinfonia-go/mongo/mod
 input SwapWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.SwapWhere") {
     id: ObjectID
     height: Int
-    tx_hash: String
+    chain_id: String!
+    tx_id: ObjectID
     msg_index: Int
 
     pool_id: Int
@@ -44,6 +47,4 @@ input SwapWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Swa
     tokens_out: String
     account: String
     fee: String
-
-    timestamp: Time
 }

@@ -2,18 +2,19 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	c "github.com/angelorc/sinfonia-go/config"
 	"github.com/angelorc/sinfonia-go/server/graph"
 	"github.com/angelorc/sinfonia-go/server/graph/generated"
+	w3t "github.com/angelorc/sinfonia-go/server/web3token"
 	"github.com/angelorc/sinfonia-go/utility"
 	"github.com/labstack/echo"
-
-	c "github.com/angelorc/sinfonia-go/config"
 )
 
 var token string
@@ -35,6 +36,18 @@ func InitGraphql(e *echo.Echo) {
 	// Resolvers && Directives
 	resolver := graph.Resolver{Token: &token}
 	config := generated.Config{Resolvers: &resolver}
+	config.Directives.Auth = func(ctx context.Context, obj interface{}, next graphql.Resolver) (interface{}, error) {
+		web3token, err := w3t.NewWeb3TokenFromBearer(*resolver.Token)
+		if err != nil {
+			return nil, fmt.Errorf("access denied")
+		}
+
+		if web3token.GetDomain() != "test.com" {
+			return nil, fmt.Errorf("access denied")
+		}
+
+		return next(ctx)
+	}
 
 	e.Use(getHeaders)
 

@@ -4,7 +4,8 @@
 type Pool @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Pool") {
     id: ObjectID!
     height: Int!
-    tx_hash: String!
+    chain_id: String!
+    tx_id: ObjectID!
     msg_index: Int!
 
     pool_id: Int!
@@ -13,7 +14,7 @@ type Pool @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Pool") {
     exit_fee: String!
     sender: String!
 
-    timestamp: Time!
+    time: Time!
 }
 
 type PoolAsset @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.PoolAsset") {
@@ -40,8 +41,9 @@ input PoolWhereUnique @goModel(model: "github.com/angelorc/sinfonia-go/mongo/mod
 
 input PoolWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.PoolWhere") {
     id: ObjectID
+    chain_id: String
     height: Int
-    tx_hash: String
+    tx_id: ObjectID
     msg_index: Int
 
     pool_id: Int

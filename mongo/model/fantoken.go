@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"strings"
 	"time"
 )
 
@@ -193,7 +194,7 @@ func SyncFantokens() error {
 		sync.Fantokens = int64(0)
 	}
 
-	txsLogs, err := GetTxsAndLogsByMessageType("/bitsong.fantoken.MsgIssueFanToken", sync.Fantokens, lastBlock)
+	txsLogs, err := GetTxsAndLogsByMessageType("/bitsong.fantoken.MsgIssue", sync.Fantokens, lastBlock)
 	if err != nil {
 		return err
 	}
@@ -202,8 +203,8 @@ func SyncFantokens() error {
 		for _, txlog := range txLogs.Tx.Logs {
 			for _, evt := range txlog.Events {
 				switch evt.Type {
-				case "issue_fantoken":
-					denom := evt.Attributes[0].Value
+				case "bitsong.fantoken.v1beta1.EventIssue":
+					denom := strings.ReplaceAll(evt.Attributes[0].Value, "\"", "")
 
 					fantoken := new(Fantoken)
 					data := &FantokenCreate{

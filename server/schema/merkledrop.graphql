@@ -1,0 +1,41 @@
+# MODEL
+##########
+
+type Merkledrop @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Merkledrop") {
+    id: ObjectID!
+    chain_id: String!
+    height: Int!
+    tx_id: ObjectID!
+    msg_index: Int!
+
+    merkledrop_id: Int!
+
+    time: Time!
+}
+
+# ENUM
+##########
+enum MerkledropOrderByENUM @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.MerkledropOrderByENUM") {
+    timestamp_ASC
+    timestamp_DESC
+    height_ASC
+    height_DESC
+}
+
+# DTO
+##########
+
+# Read
+# input FantokenWhereUnique @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.FantokenWhereUnique") {
+#     id: ObjectID!
+# }
+
+input MerkledropWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.MerkledropWhere") {
+    id: ObjectID
+    height: Int
+    chain_id: String
+    tx_id: ObjectID
+    msg_index: Int
+
+    merkledrop_id: Int
+}
