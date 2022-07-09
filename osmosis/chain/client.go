@@ -7,7 +7,7 @@ import (
 	"fmt"
 	tmcli "github.com/angelorc/sinfonia-go/tendermint"
 	"github.com/cosmos/cosmos-sdk/types/tx"
-	gammtypes "github.com/osmosis-labs/osmosis/v7/x/gamm/types"
+	gammtypes "github.com/osmosis-labs/osmosis/v9/x/gamm/types"
 	"google.golang.org/grpc/credentials"
 	"regexp"
 
@@ -17,8 +17,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/osmosis-labs/osmosis/v7/app"
-	appparams "github.com/osmosis-labs/osmosis/v7/app/params"
+	"github.com/osmosis-labs/osmosis/v9/app"
+	appparams "github.com/osmosis-labs/osmosis/v9/app/params"
 	"google.golang.org/grpc"
 
 	"github.com/angelorc/sinfonia-go/indexer/types"

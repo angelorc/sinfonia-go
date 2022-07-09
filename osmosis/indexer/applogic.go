@@ -1,11 +1,4 @@
-package indexer
-
-import (
-	incentivetypes "github.com/osmosis-labs/osmosis/v7/x/incentives/types"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"log"
-	"time"
-)
+package ind7exer
 
 /* func (i *Indexer) handleTokenSwapped(height int64, hash []byte, msgIndex int, _ sdk.Msg, attrs []sdk.Attribute, ts time.Time) {
 	poolId := int64(0)
@@ -69,7 +62,7 @@ func (i *Indexer) handlePoolCreated(height int64, hash []byte, msgIndex int, msg
 	}
 }*/
 
-func (i *Indexer) handleIncentives(height int64, attrs []abci.EventAttribute, ts time.Time) {
+/*func (i *Indexer) handleIncentives(height int64, attrs []abci.EventAttribute, ts time.Time) {
 	receiver := ""
 	coins := ""
 
@@ -87,3 +80,4 @@ func (i *Indexer) handleIncentives(height int64, attrs []abci.EventAttribute, ts
 		log.Fatalf("Failed to insert Incentive - height (%d), receiver (%s), err: %s", height, receiver, err.Error())
 	}
 }
+*/

@@ -6,7 +6,8 @@ import (
 	"github.com/angelorc/sinfonia-go/mongo/model"
 	"github.com/angelorc/sinfonia-go/osmosis/chain"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/osmosis-labs/osmosis/v7/x/gamm/types"
+	"github.com/osmosis-labs/osmosis/v9/x/gamm/pool-models/balancer"
+	"github.com/osmosis-labs/osmosis/v9/x/gamm/types"
 	"github.com/spf13/cobra"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
@@ -141,21 +142,18 @@ func syncPools(client *chain.Client) error {
 						return fmt.Errorf("error while fetching poolID, err: %s", err.Error())
 					}
 
-					var pool types.PoolI
-					err = client.Codec.Marshaler.UnpackAny(poolRes.GetPool(), &pool)
+					var poolI types.PoolI
+					err = client.Codec.Marshaler.UnpackAny(poolRes.GetPool(), &poolI)
 					if err != nil {
 						log.Fatalf("error while decoding the new pool")
 					}
 
-					poolAssets := make([]model.PoolAsset, len(pool.GetAllPoolAssets()))
-
-					for i, pa := range pool.GetAllPoolAssets() {
-						poolAsset := model.PoolAsset{
-							Token:  pa.Token.String(),
-							Weight: pa.Weight.String(),
-						}
-						poolAssets[i] = poolAsset
+					pool, ok := poolI.(*balancer.Pool)
+					if !ok {
+						log.Fatalf("error while decoding the new pool")
 					}
+
+					allPoolAssets := pool.GetAllPoolAssets()
 
 					poolModel := new(model.Pool)
 					data := &model.PoolCreate{
@@ -164,9 +162,9 @@ func syncPools(client *chain.Client) error {
 						TxID:       &txLogs.TxID,
 						MsgIndex:   &txLogs.MsgIndex,
 						PoolID:     poolID,
-						PoolAssets: convertPoolAssetsToModel(pool.GetAllPoolAssets()),
-						SwapFee:    pool.GetPoolSwapFee().String(),
-						ExitFee:    pool.GetPoolExitFee().String(),
+						PoolAssets: convertPoolAssetsToModel(allPoolAssets),
+						SwapFee:    pool.GetSwapFee(sdk.Context{}).String(),
+						ExitFee:    pool.GetExitFee(sdk.Context{}).String(),
 						Sender:     txLogs.Signer,
 						Time:       txLogs.Time,
 					}
@@ -190,7 +188,7 @@ func syncPools(client *chain.Client) error {
 	return nil
 }
 
-func convertPoolAssetsToModel(pa []types.PoolAsset) []model.PoolAsset {
+func convertPoolAssetsToModel(pa []balancer.PoolAsset) []model.PoolAsset {
 	newPoolAssets := make([]model.PoolAsset, len(pa))
 
 	for i, p := range pa {
