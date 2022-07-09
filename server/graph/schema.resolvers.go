@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	c "github.com/angelorc/sinfonia-go/config"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -63,14 +64,14 @@ func (r *mutationResolver) UpdateMerkledrop(ctx context.Context, id primitive.Ob
 			return &model.Merkledrop{}, err
 		}
 
-		cloudFlareImagesUrl := "https://api.cloudflare.com/client/v4/accounts/b0cfa5622fe9661de813b7531ad57fb9/images/v1"
+		cloudFlareImagesUrl := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/images/v1", c.GetSecret("CLOUDFLARE_ACCOUNT"))
 		req, err := http.NewRequest("POST", cloudFlareImagesUrl, bytes.NewReader(body.Bytes()))
 		if err != nil {
 			return &model.Merkledrop{}, err
 		}
 
 		req.Header.Set("Content-Type", bodywriter.FormDataContentType())
-		req.Header.Add("Authorization", "Bearer g2HF_sFImae8R1jX_I6bd4DYNzOlCrn5B6BZbx9G")
+		req.Header.Add("Authorization", "Bearer "+c.GetSecret("CLOUDFLARE_IMAGES"))
 		rsp, _ := client.Do(req)
 		if rsp.StatusCode != http.StatusOK {
 			return &model.Merkledrop{}, fmt.Errorf("request failed with response code: %d", rsp.StatusCode)
