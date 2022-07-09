@@ -9,6 +9,12 @@ type Merkledrop @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Mer
     msg_index: Int!
 
     merkledrop_id: Int!
+    denom: String!
+    amount: Int!
+    start_height: Int!
+    end_height: Int!
+    name: String
+    image: String
 
     time: Time!
 }

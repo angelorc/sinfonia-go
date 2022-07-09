@@ -37,12 +37,12 @@ type Merkledrop struct {
 
 	MerkledropID int64  `json:"merkledrop_id" bson:"merkledrop_id"`
 	Denom        string `json:"denom" bson:"denom"`
-	Amount       uint64 `json:"amount" bson:"amount"`
+	Amount       int64  `json:"amount" bson:"amount"`
 	StartHeight  int64  `json:"start_height" bson:"start_height"`
 	EndHeight    int64  `json:"end_height" bson:"end_height"`
 
-	// name
-	// image
+	Name  string `json:"name" bson:"name"`
+	Image string `json:"image" bson:"image"`
 
 	Time time.Time `json:"time,omitempty" bson:"time,omitempty" validate:"required"`
 }
@@ -72,9 +72,12 @@ type MerkledropWhere struct {
 
 	MerkledropID *int64  `json:"merkledrop_id,omitempty" bson:"merkledrop_id,omitempty"`
 	Denom        *string `json:"denom,omitempty" bson:"denom,omitempty"`
-	Amount       *uint64 `json:"amount,omitempty" bson:"amount,omitempty"`
+	Amount       *int64  `json:"amount,omitempty" bson:"amount,omitempty"`
 	StartHeight  *int64  `json:"start_height,omitempty" bson:"start_height,omitempty"`
 	EndHeight    *int64  `json:"end_height,omitempty" bson:"end_height,omitempty"`
+
+	Name  *string `json:"name,omitempty" bson:"name,omitempty"`
+	Image *string `json:"image,omitempty" bson:"image,omitempty"`
 
 	OR []bson.M `json:"$or,omitempty" bson:"$or,omitempty"`
 }
@@ -90,9 +93,11 @@ type MerkledropCreate struct {
 
 	MerkledropId *int64  `json:"merkledrop_id" bson:"merkledrop_id" validate:"required"`
 	Denom        *string `json:"denom" bson:"denom" validate:"required"`
-	Amount       *uint64 `json:"amount" bson:"amount" validate:"required"`
+	Amount       *int64  `json:"amount" bson:"amount" validate:"required"`
 	StartHeight  *int64  `json:"start_height" bson:"start_height" validate:"required"`
 	EndHeight    *int64  `json:"end_height" bson:"end_height" validate:"required"`
+	Name         *string `json:"name,omitempty" bson:"name,omitempty"`
+	Image        *string `json:"image,omitempty" bson:"image,omitempty"`
 
 	Time *time.Time `json:"time,omitempty" bson:"time,omitempty" validate:"required"`
 }

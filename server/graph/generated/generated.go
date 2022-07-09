@@ -98,11 +98,17 @@ type ComplexityRoot struct {
 	}
 
 	Merkledrop struct {
+		Amount       func(childComplexity int) int
 		ChainID      func(childComplexity int) int
+		Denom        func(childComplexity int) int
+		EndHeight    func(childComplexity int) int
 		Height       func(childComplexity int) int
 		ID           func(childComplexity int) int
+		Image        func(childComplexity int) int
 		MerkledropID func(childComplexity int) int
 		MsgIndex     func(childComplexity int) int
+		Name         func(childComplexity int) int
+		StartHeight  func(childComplexity int) int
 		Time         func(childComplexity int) int
 		TxID         func(childComplexity int) int
 	}
@@ -460,12 +466,33 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.IncentiveAsset.Denom(childComplexity), true
 
+	case "Merkledrop.amount":
+		if e.complexity.Merkledrop.Amount == nil {
+			break
+		}
+
+		return e.complexity.Merkledrop.Amount(childComplexity), true
+
 	case "Merkledrop.chain_id":
 		if e.complexity.Merkledrop.ChainID == nil {
 			break
 		}
 
 		return e.complexity.Merkledrop.ChainID(childComplexity), true
+
+	case "Merkledrop.denom":
+		if e.complexity.Merkledrop.Denom == nil {
+			break
+		}
+
+		return e.complexity.Merkledrop.Denom(childComplexity), true
+
+	case "Merkledrop.end_height":
+		if e.complexity.Merkledrop.EndHeight == nil {
+			break
+		}
+
+		return e.complexity.Merkledrop.EndHeight(childComplexity), true
 
 	case "Merkledrop.height":
 		if e.complexity.Merkledrop.Height == nil {
@@ -481,6 +508,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Merkledrop.ID(childComplexity), true
 
+	case "Merkledrop.image":
+		if e.complexity.Merkledrop.Image == nil {
+			break
+		}
+
+		return e.complexity.Merkledrop.Image(childComplexity), true
+
 	case "Merkledrop.merkledrop_id":
 		if e.complexity.Merkledrop.MerkledropID == nil {
 			break
@@ -494,6 +528,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Merkledrop.MsgIndex(childComplexity), true
+
+	case "Merkledrop.name":
+		if e.complexity.Merkledrop.Name == nil {
+			break
+		}
+
+		return e.complexity.Merkledrop.Name(childComplexity), true
+
+	case "Merkledrop.start_height":
+		if e.complexity.Merkledrop.StartHeight == nil {
+			break
+		}
+
+		return e.complexity.Merkledrop.StartHeight(childComplexity), true
 
 	case "Merkledrop.time":
 		if e.complexity.Merkledrop.Time == nil {
@@ -1441,6 +1489,12 @@ type Merkledrop @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Mer
     msg_index: Int!
 
     merkledrop_id: Int!
+    denom: String!
+    amount: Int!
+    start_height: Int!
+    end_height: Int!
+    name: String
+    image: String
 
     time: Time!
 }
@@ -1795,7 +1849,7 @@ type Query {
 }
 
 type Mutation {
-    # MerkledropProof TODO: add @auth
+    # MerkledropProof TODO: add auth
     ##########
     merkledropProofsStoreList(
         id: Int,
@@ -4197,6 +4251,264 @@ func (ec *executionContext) fieldContext_Merkledrop_merkledrop_id(ctx context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _Merkledrop_denom(ctx context.Context, field graphql.CollectedField, obj *model.Merkledrop) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Merkledrop_denom(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Denom, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Merkledrop_denom(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Merkledrop",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Merkledrop_amount(ctx context.Context, field graphql.CollectedField, obj *model.Merkledrop) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Merkledrop_amount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Amount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Merkledrop_amount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Merkledrop",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Merkledrop_start_height(ctx context.Context, field graphql.CollectedField, obj *model.Merkledrop) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Merkledrop_start_height(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StartHeight, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Merkledrop_start_height(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Merkledrop",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Merkledrop_end_height(ctx context.Context, field graphql.CollectedField, obj *model.Merkledrop) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Merkledrop_end_height(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EndHeight, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Merkledrop_end_height(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Merkledrop",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Merkledrop_name(ctx context.Context, field graphql.CollectedField, obj *model.Merkledrop) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Merkledrop_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Merkledrop_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Merkledrop",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Merkledrop_image(ctx context.Context, field graphql.CollectedField, obj *model.Merkledrop) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Merkledrop_image(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Image, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Merkledrop_image(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Merkledrop",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Merkledrop_time(ctx context.Context, field graphql.CollectedField, obj *model.Merkledrop) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Merkledrop_time(ctx, field)
 	if err != nil {
@@ -6369,6 +6681,18 @@ func (ec *executionContext) fieldContext_Query_merkledrop(ctx context.Context, f
 				return ec.fieldContext_Merkledrop_msg_index(ctx, field)
 			case "merkledrop_id":
 				return ec.fieldContext_Merkledrop_merkledrop_id(ctx, field)
+			case "denom":
+				return ec.fieldContext_Merkledrop_denom(ctx, field)
+			case "amount":
+				return ec.fieldContext_Merkledrop_amount(ctx, field)
+			case "start_height":
+				return ec.fieldContext_Merkledrop_start_height(ctx, field)
+			case "end_height":
+				return ec.fieldContext_Merkledrop_end_height(ctx, field)
+			case "name":
+				return ec.fieldContext_Merkledrop_name(ctx, field)
+			case "image":
+				return ec.fieldContext_Merkledrop_image(ctx, field)
 			case "time":
 				return ec.fieldContext_Merkledrop_time(ctx, field)
 			}
@@ -6440,6 +6764,18 @@ func (ec *executionContext) fieldContext_Query_merkledrops(ctx context.Context, 
 				return ec.fieldContext_Merkledrop_msg_index(ctx, field)
 			case "merkledrop_id":
 				return ec.fieldContext_Merkledrop_merkledrop_id(ctx, field)
+			case "denom":
+				return ec.fieldContext_Merkledrop_denom(ctx, field)
+			case "amount":
+				return ec.fieldContext_Merkledrop_amount(ctx, field)
+			case "start_height":
+				return ec.fieldContext_Merkledrop_start_height(ctx, field)
+			case "end_height":
+				return ec.fieldContext_Merkledrop_end_height(ctx, field)
+			case "name":
+				return ec.fieldContext_Merkledrop_name(ctx, field)
+			case "image":
+				return ec.fieldContext_Merkledrop_image(ctx, field)
 			case "time":
 				return ec.fieldContext_Merkledrop_time(ctx, field)
 			}
@@ -11482,6 +11818,42 @@ func (ec *executionContext) _Merkledrop(ctx context.Context, sel ast.SelectionSe
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "denom":
+
+			out.Values[i] = ec._Merkledrop_denom(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "amount":
+
+			out.Values[i] = ec._Merkledrop_amount(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "start_height":
+
+			out.Values[i] = ec._Merkledrop_start_height(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "end_height":
+
+			out.Values[i] = ec._Merkledrop_end_height(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "name":
+
+			out.Values[i] = ec._Merkledrop_name(ctx, field, obj)
+
+		case "image":
+
+			out.Values[i] = ec._Merkledrop_image(ctx, field, obj)
+
 		case "time":
 
 			out.Values[i] = ec._Merkledrop_time(ctx, field, obj)

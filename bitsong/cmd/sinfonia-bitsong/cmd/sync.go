@@ -190,7 +190,7 @@ func syncMerkledrops(client *bitsong.Client) error {
 						// return fmt.Errorf("error while fetching merkedropID %d, err: %s", merkledropId, err.Error())
 					}
 
-					amount := mRes.Merkledrop.Amount.Uint64()
+					amount := mRes.Merkledrop.Amount.Int64()
 
 					merkledrop := new(model.Merkledrop)
 					data := &model.MerkledropCreate{
