@@ -187,10 +187,17 @@ type Query {
 }
 
 type Mutation {
+    # Merkledrop TODO: add auth
+    ##########
+    updateMerkledrop(
+        id: ObjectID,!
+        data: MerkledropUpdateReq!
+    ): Merkledrop
+
     # MerkledropProof TODO: add auth
     ##########
-    merkledropProofsStoreList(
-        id: Int,
+    storeMerkledropProofs(
+        id: Int!,
         file: Upload!
     ): Int!
 }

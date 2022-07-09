@@ -4,21 +4,101 @@ package graph
 // will be copied through when generating and any unknown code will be moved to the end.
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"mime/multipart"
+	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/angelorc/sinfonia-go/mongo/model"
 	"github.com/angelorc/sinfonia-go/server/graph/generated"
+	"github.com/angelorc/sinfonia-go/utility"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func (r *mutationResolver) MerkledropProofsStoreList(ctx context.Context, id *int, file graphql.Upload) (int, error) {
-	if id == nil {
+func (r *mutationResolver) UpdateMerkledrop(ctx context.Context, id primitive.ObjectID, data model.MerkledropUpdateReq) (*model.Merkledrop, error) {
+	item := model.Merkledrop{}
+
+	if utility.IsZeroVal(id) {
+		return &model.Merkledrop{}, errors.New("missing merkledrop id")
+	}
+
+	// Validate
+	if err := utility.ValidateStruct(data); err != nil {
+		return &model.Merkledrop{}, err
+	}
+
+	dataUpdate := model.MerkledropUpdate{}
+	dataUpdate.Name = data.Name
+
+	// Upload
+	if data.Image != nil {
+		client := &http.Client{
+			Timeout: time.Second * 10,
+		}
+
+		body := &bytes.Buffer{}
+		bodywriter := multipart.NewWriter(body)
+
+		writer, err := bodywriter.CreateFormFile("file", data.Name)
+		if err != nil {
+			return &model.Merkledrop{}, err
+		}
+
+		_, err = io.Copy(writer, data.Image.File)
+		if err != nil {
+			return &model.Merkledrop{}, err
+		}
+
+		err = bodywriter.Close()
+		if err != nil {
+			return &model.Merkledrop{}, err
+		}
+
+		cloudFlareImagesUrl := "https://api.cloudflare.com/client/v4/accounts/b0cfa5622fe9661de813b7531ad57fb9/images/v1"
+		req, err := http.NewRequest("POST", cloudFlareImagesUrl, bytes.NewReader(body.Bytes()))
+		if err != nil {
+			return &model.Merkledrop{}, err
+		}
+
+		req.Header.Set("Content-Type", bodywriter.FormDataContentType())
+		req.Header.Add("Authorization", "Bearer g2HF_sFImae8R1jX_I6bd4DYNzOlCrn5B6BZbx9G")
+		rsp, _ := client.Do(req)
+		if rsp.StatusCode != http.StatusOK {
+			return &model.Merkledrop{}, fmt.Errorf("request failed with response code: %d", rsp.StatusCode)
+		}
+		defer rsp.Body.Close()
+		rspBz, _ := ioutil.ReadAll(rsp.Body)
+
+		var cloudlfareResp model.MerkledropUpdateImageResponse
+		if err := json.Unmarshal(rspBz, &cloudlfareResp); err != nil {
+			return &model.Merkledrop{}, err
+		}
+
+		if cloudlfareResp.Success {
+			if len(cloudlfareResp.Result.Variants) > 0 {
+				dataUpdate.Image = &cloudlfareResp.Result.Variants[0]
+			}
+		}
+	}
+
+	if err := item.Update(id, &dataUpdate); err != nil {
+		return nil, err
+	}
+
+	return &item, nil
+}
+
+func (r *mutationResolver) StoreMerkledropProofs(ctx context.Context, id int, file graphql.Upload) (int, error) {
+	if id <= 0 {
 		return 0, errors.New("invalid merkledrop_id")
 	}
 	if file.Size <= 0 {
@@ -42,7 +122,7 @@ func (r *mutationResolver) MerkledropProofsStoreList(ctx context.Context, id *in
 		}
 
 		data := model.MerkledropProofCreate{
-			MerkledropID: int64(*id),
+			MerkledropID: int64(id),
 			Address:      addr,
 			Index:        r.Index,
 			Amount:       amount,

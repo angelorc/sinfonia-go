@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"errors"
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/angelorc/sinfonia-go/mongo/db"
 	"github.com/angelorc/sinfonia-go/utility"
 	"go.mongodb.org/mongo-driver/bson"
@@ -100,6 +101,23 @@ type MerkledropCreate struct {
 	Image        *string `json:"image,omitempty" bson:"image,omitempty"`
 
 	Time *time.Time `json:"time,omitempty" bson:"time,omitempty" validate:"required"`
+}
+
+type MerkledropUpdate struct {
+	Name  string  `json:"name" bson:"name,omitempty" validate:"required"`
+	Image *string `json:"image" bson:"image,omitempty"`
+}
+
+type MerkledropUpdateReq struct {
+	Name  string          `json:"name" bson:"name,omitempty" validate:"required"`
+	Image *graphql.Upload `json:"image" bson:"image,omitempty"`
+}
+
+type MerkledropUpdateImageResponse struct {
+	Result struct {
+		Variants []string `json:"variants"`
+	} `json:"result"`
+	Success bool `json:"success"`
 }
 
 /**
@@ -208,6 +226,36 @@ func (m *Merkledrop) Create(data *MerkledropCreate) error {
 	if !ok {
 		return errors.New("server error")
 	}
+
+	return nil
+}
+
+func (m *Merkledrop) Update(id primitive.ObjectID, data *MerkledropUpdate) error {
+	// validate
+	if utility.IsZeroVal(id) {
+		return errors.New("missing merkledrop id")
+	}
+	if err := utility.ValidateStruct(data); err != nil {
+		return err
+	}
+
+	// collection
+	collection := db.GetCollection(DB_COLLECTION_NAME__MERKLEDROP, DB_REF_NAME__MERKLEDROP)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// check if fantoken exists
+	collection.FindOne(ctx, bson.M{"_id": id}).Decode(&m)
+	if m.Denom == "" {
+		return errors.New("merkledrop not found")
+	}
+
+	_, err := collection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": data})
+	if err != nil {
+		return err
+	}
+
+	collection.FindOne(ctx, bson.M{"_id": id}).Decode(&m)
 
 	return nil
 }

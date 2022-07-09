@@ -3,7 +3,6 @@ package model
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/angelorc/sinfonia-go/mongo/db"
 	"github.com/angelorc/sinfonia-go/utility"
 	"go.mongodb.org/mongo-driver/bson"
@@ -69,10 +68,6 @@ type FantokenCreate struct {
 	Alias    *[]string           `json:"alias" bson:"alias"`
 	Owner    *string             `json:"owner" bson:"owner" validate:"required"`
 	IssuedAt *time.Time          `json:"issued_at,omitempty" bson:"issued_at,omitempty" validate:"required"`
-}
-
-type FantokenAddAlias struct {
-	Alias string `json:"alias" bson:"alias,omitempty" validate:"required"`
 }
 
 /**
@@ -210,16 +205,12 @@ func (f *Fantoken) AddAlias(alias string) error {
 		return errors.New("fantoken not found")
 	}
 
-	fmt.Println(f.ID.String())
-
-	res, err := collection.UpdateOne(ctx, bson.M{"_id": f.ID}, bson.D{
+	_, err := collection.UpdateOne(ctx, bson.M{"_id": f.ID}, bson.D{
 		{"$push", bson.D{{"alias", alias}}},
 	})
 	if err != nil {
 		return err
 	}
-
-	fmt.Println(res)
 
 	collection.FindOne(ctx, bson.M{"_id": f.ID}).Decode(&f)
 
