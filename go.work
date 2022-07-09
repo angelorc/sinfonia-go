@@ -6,7 +6,7 @@ use (
 	./config
 	./indexer
 	./mongo
-	./osmosis
+	// ./osmosis
 	./server
 	./tendermint
 	./utility

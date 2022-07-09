@@ -32,9 +32,9 @@ func GetSyncCmd() *cobra.Command {
 
 func GetSyncPoolCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "pool",
+		Use:     "pools",
 		Short:   "sync pools from latest blocks",
-		Example: "sinfonia-osmosis sync pool --mongo-dbname sinfonia-test",
+		Example: "sinfonia-osmosis sync pools --mongo-dbname sinfonia-test",
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			mongoURI, mongoDBName, mongoRetryWrites, err := parseMongoFlags(cmd)
@@ -108,108 +108,6 @@ func GetSyncSwapCmd() *cobra.Command {
 
 	return cmd
 }
-
-func syncPools(client *chain.Client) error {
-	// get last available height on db
-	lastBlock := model.GetLastHeight()
-
-	// get last block synced from account
-	sync := new(model.Sync)
-	sync.One()
-
-	if sync.ID.IsZero() {
-		sync.ID = primitive.NewObjectID()
-		sync.Pools = int64(0)
-	}
-
-	txsLogs, err := model.GetTxsAndLogsByMessageType("/osmosis.gamm.v1beta1.MsgCreateBalancerPool", sync.Pools, lastBlock)
-	if err != nil {
-		return err
-	}
-
-	for _, txLogs := range txsLogs {
-		for _, txlog := range txLogs.Tx.Logs {
-			for _, evt := range txlog.Events {
-				switch evt.Type {
-				case "pool_created":
-					poolID, err := strconv.ParseUint(evt.Attributes[0].Value, 0, 64)
-					if err != nil {
-						return fmt.Errorf("error while parsing poolID, err: %s", err.Error())
-					}
-
-					poolRes, err := client.QueryPoolByID(poolID)
-					if err != nil {
-						return fmt.Errorf("error while fetching poolID, err: %s", err.Error())
-					}
-
-					var poolI types.PoolI
-					err = client.Codec.Marshaler.UnpackAny(poolRes.GetPool(), &poolI)
-					if err != nil {
-						log.Fatalf("error while decoding the new pool")
-					}
-
-					pool, ok := poolI.(*balancer.Pool)
-					if !ok {
-						log.Fatalf("error while decoding the new pool")
-					}
-
-					allPoolAssets := pool.GetAllPoolAssets()
-
-					poolModel := new(model.Pool)
-					data := &model.PoolCreate{
-						ChainID:    &txLogs.ChainID,
-						Height:     &txLogs.Height,
-						TxID:       &txLogs.TxID,
-						MsgIndex:   &txLogs.MsgIndex,
-						PoolID:     poolID,
-						PoolAssets: convertPoolAssetsToModel(allPoolAssets),
-						SwapFee:    pool.GetSwapFee(sdk.Context{}).String(),
-						ExitFee:    pool.GetExitFee(sdk.Context{}).String(),
-						Sender:     txLogs.Signer,
-						Time:       txLogs.Time,
-					}
-
-					if err := poolModel.Create(data); err != nil {
-						return err
-					}
-				}
-			}
-		}
-	}
-
-	// update sync with last synced height
-	sync.Pools = lastBlock
-	if err := sync.Save(); err != nil {
-		return err
-	}
-
-	fmt.Printf("%d pools synced to block %d ", len(txsLogs), sync.Pools)
-
-	return nil
-}
-
-func convertPoolAssetsToModel(pa []balancer.PoolAsset) []model.PoolAsset {
-	newPoolAssets := make([]model.PoolAsset, len(pa))
-
-	for i, p := range pa {
-		newPoolAssets[i] = model.PoolAsset{
-			Token:  p.Token.String(),
-			Weight: p.Weight.String(),
-		}
-	}
-
-	return newPoolAssets
-}
-
-/*func getAttrValueByKey(key string, attrs []model.Attribute) string {
-	for _, attr := range attrs {
-		if key == attr.Key {
-			return attr.Value
-		}
-	}
-
-	return ""
-}*/
 
 func parseAttrs(attrs []model.Attribute) (poolID int64, tokensIn, tokensOut string) {
 	for _, attr := range attrs {
@@ -358,4 +256,144 @@ func calcFee(tokenInStr, swapFeeStr string) string {
 		Denom:  tokenIn.Denom,
 		Amount: tokenIn.Amount.Sub(tokenInAfterFee),
 	}.String()
+}
+
+func syncPools(client *chain.Client) error {
+	// get last available height on db
+	lastBlock := model.GetLastHeight()
+
+	// get last block synced from account
+	sync := new(model.Sync)
+	sync.One()
+
+	if sync.ID.IsZero() {
+		sync.ID = primitive.NewObjectID()
+		sync.Pools = int64(0)
+	}
+
+	txsLogs, err := model.GetTxsAndLogsByMessageType("/osmosis.gamm.poolmodels.balancer.v1beta1.MsgCreateBalancerPool", sync.Pools, lastBlock)
+	if err != nil {
+		return err
+	}
+
+	for _, txLogs := range txsLogs {
+		for _, txlog := range txLogs.Tx.Logs {
+			for _, evt := range txlog.Events {
+				switch evt.Type {
+				case "pool_created":
+					poolID, err := strconv.ParseUint(evt.Attributes[0].Value, 0, 64)
+					if err != nil {
+						return fmt.Errorf("error while parsing poolID, err: %s", err.Error())
+					}
+
+					poolRes, err := client.QueryPoolByID(poolID)
+					if err != nil {
+						return fmt.Errorf("error while fetching poolID, err: %s", err.Error())
+					}
+
+					var poolI types.PoolI
+					err = client.Codec.Marshaler.UnpackAny(poolRes.GetPool(), &poolI)
+					if err != nil {
+						log.Fatalf("error while decoding the new pool")
+					}
+
+					pool, ok := poolI.(*balancer.Pool)
+					if !ok {
+						log.Fatalf("error while decoding the new pool")
+					}
+
+					allPoolAssets := pool.GetAllPoolAssets()
+
+					// check if is contains a bitsong fantoken
+					found := false
+					for _, asset := range allPoolAssets {
+						// if is an ibc token
+						if strings.HasPrefix(asset.Token.Denom, "ibc/") {
+							// check fantoken by alias
+							var fantoken model.Fantoken
+
+							if err := fantoken.One(&model.FantokenWhere{
+								Alias: &asset.Token.Denom,
+							}); err != nil {
+								log.Fatalf("error while querying fantoken: %v", err)
+							}
+
+							// if exist return true
+							if !fantoken.ID.IsZero() {
+								found = true
+							} else {
+								// else  query ibc denom
+								denomRes, err := client.QueryIBCDenomTrace(strings.ReplaceAll(asset.Token.Denom, "ibc/", ""))
+								if err != nil {
+									return fmt.Errorf("error while fetching denom-trace, err: %s", err.Error())
+								}
+
+								if strings.HasPrefix(denomRes.DenomTrace.BaseDenom, "ft") {
+									if strings.HasPrefix(denomRes.DenomTrace.Path, "transfer/channel-0") {
+										if err := fantoken.One(&model.FantokenWhere{
+											Denom: &denomRes.DenomTrace.BaseDenom,
+										}); err != nil {
+											log.Fatalf("error while querying fantoken: %v", err)
+										}
+
+										// add the alias
+										if err := fantoken.AddAlias(asset.Token.Denom); err != nil {
+											log.Fatalf("error while adding a fantoken alias: %v", err)
+										}
+
+										found = true
+									}
+								}
+							}
+						}
+					}
+
+					if !found {
+						continue
+					}
+
+					poolModel := new(model.Pool)
+					data := &model.PoolCreate{
+						ChainID:    &txLogs.ChainID,
+						Height:     &txLogs.Height,
+						TxID:       &txLogs.TxID,
+						MsgIndex:   &txLogs.MsgIndex,
+						PoolID:     poolID,
+						PoolAssets: convertPoolAssetsToModel(allPoolAssets),
+						SwapFee:    pool.GetSwapFee(sdk.Context{}).String(),
+						ExitFee:    pool.GetExitFee(sdk.Context{}).String(),
+						Sender:     txLogs.Signer,
+						Time:       txLogs.Time,
+					}
+
+					if err := poolModel.Create(data); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+
+	// update sync with last synced height
+	sync.Pools = lastBlock
+	if err := sync.Save(); err != nil {
+		return err
+	}
+
+	fmt.Printf("%d pools synced to block %d ", len(txsLogs), sync.Pools)
+
+	return nil
+}
+
+func convertPoolAssetsToModel(pa []balancer.PoolAsset) []model.PoolAsset {
+	newPoolAssets := make([]model.PoolAsset, len(pa))
+
+	for i, p := range pa {
+		newPoolAssets[i] = model.PoolAsset{
+			Token:  model.Coin{Denom: p.Token.Denom, Amount: p.Token.Amount.String()},
+			Weight: p.Weight.String(),
+		}
+	}
+
+	return newPoolAssets
 }

@@ -32,6 +32,7 @@ func (r *mutationResolver) MerkledropProofsStoreList(ctx context.Context, id *in
 
 	total := 0
 
+	// TODO: store proofs in batch mode
 	for addr, r := range parsedList {
 		item := model.MerkledropProof{}
 

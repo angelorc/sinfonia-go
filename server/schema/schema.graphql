@@ -129,7 +129,7 @@ type Query {
 
     merkledropProofCount(
         where: MerkledropProofWhere
-    ): Int @auth
+    ): Int
 
     # Incentive
     ##########
@@ -187,7 +187,7 @@ type Query {
 }
 
 type Mutation {
-    # MerkledropProof
+    # MerkledropProof TODO: add auth
     ##########
     merkledropProofsStoreList(
         id: Int,

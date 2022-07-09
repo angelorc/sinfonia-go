@@ -18,7 +18,7 @@ type Pool @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Pool") {
 }
 
 type PoolAsset @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.PoolAsset") {
-    token: String!
+    token: Coin!
     weight: String!
 }
 
@@ -51,6 +51,6 @@ input PoolWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Poo
 }
 
 input PoolAssetWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.PoolAssetWhere") {
-    token: String
+    token: CoinInput
     weight: String
 }

@@ -30,6 +30,7 @@ type Fantoken struct {
 	Height   int64              `json:"height" bson:"height" validate:"required"`
 	TxID     primitive.ObjectID `json:"tx_id" bson:"tx_id" validate:"required"`
 	Denom    string             `json:"denom" bson:"denom" validate:"required"`
+	Alias    []string           `json:"alias" bson:"alias"`
 	Owner    string             `json:"owner" bson:"owner" validate:"required"`
 	IssuedAt time.Time          `json:"issued_at,omitempty" bson:"issued_at,omitempty" validate:"required"`
 }
@@ -52,6 +53,7 @@ type FantokenWhere struct {
 	Height  *int64              `json:"height,omitempty" bson:"height,omitempty"`
 	TxID    *primitive.ObjectID `json:"tx_id,omitempty" bson:"tx_id,omitempty"`
 	Denom   *string             `json:"denom,omitempty" bson:"denom,omitempty"`
+	Alias   *string             `json:"alias,omitempty" bson:"alias,omitempty"`
 	Owner   *string             `json:"owner,omitempty" bson:"owner,omitempty"`
 	OR      []bson.M            `json:"$or,omitempty" bson:"$or,omitempty"`
 }
@@ -64,8 +66,13 @@ type FantokenCreate struct {
 	Height   *int64              `json:"height" bson:"height" validate:"required"`
 	TxID     *primitive.ObjectID `json:"tx_id" bson:"tx_id" validate:"required"`
 	Denom    *string             `json:"denom" bson:"denom" validate:"required"`
+	Alias    *[]string           `json:"alias" bson:"alias"`
 	Owner    *string             `json:"owner" bson:"owner" validate:"required"`
 	IssuedAt *time.Time          `json:"issued_at,omitempty" bson:"issued_at,omitempty" validate:"required"`
+}
+
+type FantokenAddAlias struct {
+	Alias string `json:"alias" bson:"alias,omitempty" validate:"required"`
 }
 
 /**
@@ -164,6 +171,9 @@ func (f *Fantoken) Create(data *FantokenCreate) error {
 	}
 
 	// operation
+	if data.Alias == nil {
+		data.Alias = &[]string{}
+	}
 	res, err := collection.InsertOne(ctx, data)
 	if err != nil {
 		return err
@@ -177,60 +187,41 @@ func (f *Fantoken) Create(data *FantokenCreate) error {
 	return nil
 }
 
-/**
- * INDEXER API
- */
+func (f *Fantoken) AddAlias(alias string) error {
+	alias = strings.TrimSpace(alias)
 
-func SyncFantokens() error {
-	// get last available height on db
-	lastBlock := GetLastHeight()
-
-	// get last block synced from account
-	sync := new(Sync)
-	sync.One()
-
-	if sync.ID.IsZero() {
-		sync.ID = primitive.NewObjectID()
-		sync.Fantokens = int64(0)
+	// validate
+	if utility.IsZeroVal(f.ID) {
+		return errors.New("missing fantoken id")
 	}
 
-	txsLogs, err := GetTxsAndLogsByMessageType("/bitsong.fantoken.MsgIssue", sync.Fantokens, lastBlock)
+	if alias == "" {
+		return errors.New("missing fantoken alias")
+	}
+
+	// collection
+	collection := db.GetCollection(DB_COLLECTION_NAME__FANTOKEN, DB_REF_NAME__FANTOKEN)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// check if fantoken exists
+	collection.FindOne(ctx, bson.M{"_id": f.ID}).Decode(&f)
+	if f.Denom == "" {
+		return errors.New("fantoken not found")
+	}
+
+	fmt.Println(f.ID.String())
+
+	res, err := collection.UpdateOne(ctx, bson.M{"_id": f.ID}, bson.D{
+		{"$push", bson.D{{"alias", alias}}},
+	})
 	if err != nil {
 		return err
 	}
 
-	for _, txLogs := range txsLogs {
-		for _, txlog := range txLogs.Tx.Logs {
-			for _, evt := range txlog.Events {
-				switch evt.Type {
-				case "bitsong.fantoken.v1beta1.EventIssue":
-					denom := strings.ReplaceAll(evt.Attributes[0].Value, "\"", "")
+	fmt.Println(res)
 
-					fantoken := new(Fantoken)
-					data := &FantokenCreate{
-						ChainID:  &txLogs.ChainID,
-						Height:   &txLogs.Height,
-						TxID:     &txLogs.TxID,
-						Denom:    &denom,
-						Owner:    &txLogs.Signer,
-						IssuedAt: &txLogs.Time,
-					}
-
-					if err := fantoken.Create(data); err != nil {
-						return err
-					}
-				}
-			}
-		}
-	}
-
-	// update sync with last synced height
-	sync.Fantokens = lastBlock
-	if err := sync.Save(); err != nil {
-		return err
-	}
-
-	fmt.Printf("%d fantokens synced to block %d ", len(txsLogs), sync.Fantokens)
+	collection.FindOne(ctx, bson.M{"_id": f.ID}).Decode(&f)
 
 	return nil
 }

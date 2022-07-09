@@ -10,6 +10,7 @@ type Fantoken @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Fanto
 
     denom: String!
     owner: String!
+    alias: [String!]!
     issued_at: Time!
 }
 
@@ -38,5 +39,6 @@ input FantokenWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model
     # msg_index: Int
 
     denom: String
+    alias: String
     owner: String
 }

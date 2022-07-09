@@ -74,6 +74,7 @@ type ComplexityRoot struct {
 	}
 
 	Fantoken struct {
+		Alias    func(childComplexity int) int
 		ChainID  func(childComplexity int) int
 		Denom    func(childComplexity int) int
 		Height   func(childComplexity int) int
@@ -353,6 +354,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Coin.Denom(childComplexity), true
+
+	case "Fantoken.alias":
+		if e.complexity.Fantoken.Alias == nil {
+			break
+		}
+
+		return e.complexity.Fantoken.Alias(childComplexity), true
 
 	case "Fantoken.chain_id":
 		if e.complexity.Fantoken.ChainID == nil {
@@ -1218,6 +1226,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputAccountWhere,
 		ec.unmarshalInputAccountWhereUnique,
+		ec.unmarshalInputCoinInput,
 		ec.unmarshalInputFantokenWhere,
 		ec.unmarshalInputIncentiveAssetWhere,
 		ec.unmarshalInputIncentiveWhere,
@@ -1326,6 +1335,11 @@ input AccountWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.
 	{Name: "../../schema/coin.graphql", Input: `type Coin @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Coin") {
     amount: String!
     denom: String!
+}
+
+input CoinInput @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.CoinInput") {
+    amount: String!
+    denom: String!
 }`, BuiltIn: false},
 	{Name: "../../schema/fantoken.graphql", Input: `# MODEL
 ##########
@@ -1339,6 +1353,7 @@ type Fantoken @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Fanto
 
     denom: String!
     owner: String!
+    alias: [String!]!
     issued_at: Time!
 }
 
@@ -1367,6 +1382,7 @@ input FantokenWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model
     # msg_index: Int
 
     denom: String
+    alias: String
     owner: String
 }`, BuiltIn: false},
 	{Name: "../../schema/incentive.graphql", Input: `# MODEL
@@ -1554,7 +1570,7 @@ type Pool @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Pool") {
 }
 
 type PoolAsset @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.PoolAsset") {
-    token: String!
+    token: Coin!
     weight: String!
 }
 
@@ -1587,7 +1603,7 @@ input PoolWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.Poo
 }
 
 input PoolAssetWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.PoolAssetWhere") {
-    token: String
+    token: CoinInput
     weight: String
 }`, BuiltIn: false},
 	{Name: "../../schema/schema.graphql", Input: `# DIRECTIVE
@@ -1721,7 +1737,7 @@ type Query {
 
     merkledropProofCount(
         where: MerkledropProofWhere
-    ): Int @auth
+    ): Int
 
     # Incentive
     ##########
@@ -1779,7 +1795,7 @@ type Query {
 }
 
 type Mutation {
-    # MerkledropProof
+    # MerkledropProof TODO: add @auth
     ##########
     merkledropProofsStoreList(
         id: Int,
@@ -3512,6 +3528,50 @@ func (ec *executionContext) _Fantoken_owner(ctx context.Context, field graphql.C
 }
 
 func (ec *executionContext) fieldContext_Fantoken_owner(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Fantoken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Fantoken_alias(ctx context.Context, field graphql.CollectedField, obj *model.Fantoken) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Fantoken_alias(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Alias, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Fantoken_alias(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Fantoken",
 		Field:      field,
@@ -5409,9 +5469,9 @@ func (ec *executionContext) _PoolAsset_token(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(model.Coin)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNCoin2githubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐCoin(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_PoolAsset_token(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5421,7 +5481,13 @@ func (ec *executionContext) fieldContext_PoolAsset_token(ctx context.Context, fi
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			switch field.Name {
+			case "amount":
+				return ec.fieldContext_Coin_amount(ctx, field)
+			case "denom":
+				return ec.fieldContext_Coin_denom(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Coin", field.Name)
 		},
 	}
 	return fc, nil
@@ -6108,6 +6174,8 @@ func (ec *executionContext) fieldContext_Query_fantoken(ctx context.Context, fie
 				return ec.fieldContext_Fantoken_denom(ctx, field)
 			case "owner":
 				return ec.fieldContext_Fantoken_owner(ctx, field)
+			case "alias":
+				return ec.fieldContext_Fantoken_alias(ctx, field)
 			case "issued_at":
 				return ec.fieldContext_Fantoken_issued_at(ctx, field)
 			}
@@ -6179,6 +6247,8 @@ func (ec *executionContext) fieldContext_Query_fantokens(ctx context.Context, fi
 				return ec.fieldContext_Fantoken_denom(ctx, field)
 			case "owner":
 				return ec.fieldContext_Fantoken_owner(ctx, field)
+			case "alias":
+				return ec.fieldContext_Fantoken_alias(ctx, field)
 			case "issued_at":
 				return ec.fieldContext_Fantoken_issued_at(ctx, field)
 			}
@@ -6594,28 +6664,8 @@ func (ec *executionContext) _Query_merkledropProofCount(ctx context.Context, fie
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().MerkledropProofCount(rctx, fc.Args["where"].(*model.MerkledropProofWhere))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Auth == nil {
-				return nil, errors.New("directive auth is not implemented")
-			}
-			return ec.directives.Auth(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*int); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *int`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().MerkledropProofCount(rctx, fc.Args["where"].(*model.MerkledropProofWhere))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10309,6 +10359,37 @@ func (ec *executionContext) unmarshalInputAccountWhereUnique(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCoinInput(ctx context.Context, obj interface{}) (model.CoinInput, error) {
+	var it model.CoinInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "amount":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amount"))
+			it.Amount, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "denom":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("denom"))
+			it.Denom, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputFantokenWhere(ctx context.Context, obj interface{}) (model.FantokenWhere, error) {
 	var it model.FantokenWhere
 	asMap := map[string]interface{}{}
@@ -10355,6 +10436,14 @@ func (ec *executionContext) unmarshalInputFantokenWhere(ctx context.Context, obj
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("denom"))
 			it.Denom, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "alias":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("alias"))
+			it.Alias, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -10722,7 +10811,7 @@ func (ec *executionContext) unmarshalInputPoolAssetWhere(ctx context.Context, ob
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
-			it.Token, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			it.Token, err = ec.unmarshalOCoinInput2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐCoinInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -11230,6 +11319,13 @@ func (ec *executionContext) _Fantoken(ctx context.Context, sel ast.SelectionSet,
 		case "owner":
 
 			out.Values[i] = ec._Fantoken_owner(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "alias":
+
+			out.Values[i] = ec._Fantoken_alias(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
@@ -12917,6 +13013,10 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNCoin2githubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐCoin(ctx context.Context, sel ast.SelectionSet, v model.Coin) graphql.Marshaler {
+	return ec._Coin(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNFantoken2ᚕᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐFantoken(ctx context.Context, sel ast.SelectionSet, v []*model.Fantoken) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -13844,6 +13944,14 @@ func (ec *executionContext) marshalOCoin2ᚕgithubᚗcomᚋangelorcᚋsinfonia�
 	wg.Wait()
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalOCoinInput2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐCoinInput(ctx context.Context, v interface{}) (*model.CoinInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputCoinInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOFantoken2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐFantoken(ctx context.Context, sel ast.SelectionSet, v *model.Fantoken) graphql.Marshaler {

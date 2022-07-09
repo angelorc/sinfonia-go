@@ -11,15 +11,6 @@ import (
 	"strings"
 )
 
-const (
-	flagModules    = "modules"
-	flagConcurrent = "concurrent"
-
-	flagMongoUri    = "mongo-uri"
-	flagMongoDBName = "mongo-dbname"
-	flagMongoRetry  = "mongo-retry"
-)
-
 func IndexerCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "indexer",

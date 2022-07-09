@@ -21,6 +21,7 @@ import (
 	appparams "github.com/bitsongofficial/go-bitsong/app/params"
 
 	indexertypes "github.com/angelorc/sinfonia-go/indexer/types"
+	merkledroptypes "github.com/bitsongofficial/go-bitsong/x/merkledrop/types"
 )
 
 var _ indexertypes.ClientI = &Client{}
@@ -109,6 +110,12 @@ func (c *Client) DecodeTx(tx []byte) (sdk.Tx, error) {
 	}
 
 	return sdkTx, nil
+}
+
+// APP Query
+
+func (c *Client) QueryMerkledropByID(mdID uint64) (*merkledroptypes.QueryMerkledropResponse, error) {
+	return merkledroptypes.NewQueryClient(c.grpc).Merkledrop(context.Background(), &merkledroptypes.QueryMerkledropRequest{Id: mdID})
 }
 
 /*func (c *Client) ParseTxFee(fees sdk.Coins) (string, string) {

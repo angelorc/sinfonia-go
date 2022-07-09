@@ -44,7 +44,7 @@ type Pool struct {
 }
 
 type PoolAsset struct {
-	Token  string `json:"token" bson:"token" validate:"required"`
+	Token  Coin   `json:"token" bson:"token" validate:"required"`
 	Weight string `json:"weight" bson:"weight" validate:"required"`
 }
 
@@ -77,8 +77,8 @@ type PoolWhere struct {
 }
 
 type PoolAssetWhere struct {
-	Token  *string `json:"token,omitempty" bson:"token,omitempty"`
-	Weight *string `json:"weight,omitempty" bson:"weight,omitempty"`
+	Token  *CoinInput `json:"token,omitempty" bson:"token,omitempty"`
+	Weight *string    `json:"weight,omitempty" bson:"weight,omitempty"`
 }
 
 // Write

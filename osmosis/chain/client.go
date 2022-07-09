@@ -22,6 +22,8 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/angelorc/sinfonia-go/indexer/types"
+
+	ibctypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 )
 
 var _ types.ClientI = &Client{}
@@ -116,6 +118,10 @@ func (c *Client) DecodeTx(tx []byte) (sdk.Tx, error) {
 
 func (c *Client) QueryPoolByID(poolID uint64) (*gammtypes.QueryPoolResponse, error) {
 	return gammtypes.NewQueryClient(c.grpc).Pool(context.Background(), &gammtypes.QueryPoolRequest{PoolId: poolID})
+}
+
+func (c *Client) QueryIBCDenomTrace(hash string) (*ibctypes.QueryDenomTraceResponse, error) {
+	return ibctypes.NewQueryClient(c.grpc).DenomTrace(context.Background(), &ibctypes.QueryDenomTraceRequest{Hash: hash})
 }
 
 /*func (c *Client) ParseTxFee(fees sdk.Coins) (string, string) {
