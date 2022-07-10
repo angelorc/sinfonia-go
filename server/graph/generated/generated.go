@@ -39,6 +39,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	MerkledropProof() MerkledropProofResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
 	MerkledropProofWhere() MerkledropProofWhereResolver
@@ -121,6 +122,7 @@ type ComplexityRoot struct {
 		CreatedAt    func(childComplexity int) int
 		ID           func(childComplexity int) int
 		Index        func(childComplexity int) int
+		Merkledrop   func(childComplexity int) int
 		MerkledropID func(childComplexity int) int
 		Proofs       func(childComplexity int) int
 	}
@@ -224,6 +226,9 @@ type ComplexityRoot struct {
 	}
 }
 
+type MerkledropProofResolver interface {
+	Merkledrop(ctx context.Context, obj *model.MerkledropProof) (*model.Merkledrop, error)
+}
 type MutationResolver interface {
 	UpdateMerkledrop(ctx context.Context, id int, data model.MerkledropUpdateReq) (*model.Merkledrop, error)
 }
@@ -604,6 +609,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.MerkledropProof.Index(childComplexity), true
+
+	case "MerkledropProof.merkledrop":
+		if e.complexity.MerkledropProof.Merkledrop == nil {
+			break
+		}
+
+		return e.complexity.MerkledropProof.Merkledrop(childComplexity), true
 
 	case "MerkledropProof.merkledrop_id":
 		if e.complexity.MerkledropProof.MerkledropID == nil {
@@ -1557,6 +1569,7 @@ type MerkledropProof @goModel(model: "github.com/angelorc/sinfonia-go/mongo/mode
     amount: Int!
     proofs: [String!]!
     claimed: Boolean!
+    merkledrop: Merkledrop!
 
     created_at: Time!
 }
@@ -4890,6 +4903,78 @@ func (ec *executionContext) fieldContext_MerkledropProof_claimed(ctx context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _MerkledropProof_merkledrop(ctx context.Context, field graphql.CollectedField, obj *model.MerkledropProof) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MerkledropProof_merkledrop(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.MerkledropProof().Merkledrop(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Merkledrop)
+	fc.Result = res
+	return ec.marshalNMerkledrop2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐMerkledrop(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MerkledropProof_merkledrop(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MerkledropProof",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Merkledrop_id(ctx, field)
+			case "chain_id":
+				return ec.fieldContext_Merkledrop_chain_id(ctx, field)
+			case "height":
+				return ec.fieldContext_Merkledrop_height(ctx, field)
+			case "tx_id":
+				return ec.fieldContext_Merkledrop_tx_id(ctx, field)
+			case "msg_index":
+				return ec.fieldContext_Merkledrop_msg_index(ctx, field)
+			case "merkledrop_id":
+				return ec.fieldContext_Merkledrop_merkledrop_id(ctx, field)
+			case "denom":
+				return ec.fieldContext_Merkledrop_denom(ctx, field)
+			case "amount":
+				return ec.fieldContext_Merkledrop_amount(ctx, field)
+			case "start_height":
+				return ec.fieldContext_Merkledrop_start_height(ctx, field)
+			case "end_height":
+				return ec.fieldContext_Merkledrop_end_height(ctx, field)
+			case "name":
+				return ec.fieldContext_Merkledrop_name(ctx, field)
+			case "image":
+				return ec.fieldContext_Merkledrop_image(ctx, field)
+			case "time":
+				return ec.fieldContext_Merkledrop_time(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Merkledrop", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _MerkledropProof_created_at(ctx context.Context, field graphql.CollectedField, obj *model.MerkledropProof) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_MerkledropProof_created_at(ctx, field)
 	if err != nil {
@@ -6996,6 +7081,8 @@ func (ec *executionContext) fieldContext_Query_merkledropProof(ctx context.Conte
 				return ec.fieldContext_MerkledropProof_proofs(ctx, field)
 			case "claimed":
 				return ec.fieldContext_MerkledropProof_claimed(ctx, field)
+			case "merkledrop":
+				return ec.fieldContext_MerkledropProof_merkledrop(ctx, field)
 			case "created_at":
 				return ec.fieldContext_MerkledropProof_created_at(ctx, field)
 			}
@@ -7069,6 +7156,8 @@ func (ec *executionContext) fieldContext_Query_merkledropProofs(ctx context.Cont
 				return ec.fieldContext_MerkledropProof_proofs(ctx, field)
 			case "claimed":
 				return ec.fieldContext_MerkledropProof_claimed(ctx, field)
+			case "merkledrop":
+				return ec.fieldContext_MerkledropProof_merkledrop(ctx, field)
 			case "created_at":
 				return ec.fieldContext_MerkledropProof_created_at(ctx, field)
 			}
@@ -12039,56 +12128,76 @@ func (ec *executionContext) _MerkledropProof(ctx context.Context, sel ast.Select
 			out.Values[i] = ec._MerkledropProof_id(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "merkledrop_id":
 
 			out.Values[i] = ec._MerkledropProof_merkledrop_id(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "index":
 
 			out.Values[i] = ec._MerkledropProof_index(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "address":
 
 			out.Values[i] = ec._MerkledropProof_address(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "amount":
 
 			out.Values[i] = ec._MerkledropProof_amount(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "proofs":
 
 			out.Values[i] = ec._MerkledropProof_proofs(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "claimed":
 
 			out.Values[i] = ec._MerkledropProof_claimed(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
+		case "merkledrop":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MerkledropProof_merkledrop(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "created_at":
 
 			out.Values[i] = ec._MerkledropProof_created_at(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -13687,6 +13796,10 @@ func (ec *executionContext) marshalNInt2ᚖint(ctx context.Context, sel ast.Sele
 	return res
 }
 
+func (ec *executionContext) marshalNMerkledrop2githubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐMerkledrop(ctx context.Context, sel ast.SelectionSet, v model.Merkledrop) graphql.Marshaler {
+	return ec._Merkledrop(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNMerkledrop2ᚕᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐMerkledrop(ctx context.Context, sel ast.SelectionSet, v []*model.Merkledrop) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -13723,6 +13836,16 @@ func (ec *executionContext) marshalNMerkledrop2ᚕᚖgithubᚗcomᚋangelorcᚋs
 	wg.Wait()
 
 	return ret
+}
+
+func (ec *executionContext) marshalNMerkledrop2ᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐMerkledrop(ctx context.Context, sel ast.SelectionSet, v *model.Merkledrop) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Merkledrop(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNMerkledropProof2ᚕᚖgithubᚗcomᚋangelorcᚋsinfoniaᚑgoᚋmongoᚋmodelᚐMerkledropProof(ctx context.Context, sel ast.SelectionSet, v []*model.MerkledropProof) graphql.Marshaler {

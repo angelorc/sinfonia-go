@@ -10,6 +10,7 @@ type MerkledropProof @goModel(model: "github.com/angelorc/sinfonia-go/mongo/mode
     amount: Int!
     proofs: [String!]!
     claimed: Boolean!
+    merkledrop: Merkledrop!
 
     created_at: Time!
 }
