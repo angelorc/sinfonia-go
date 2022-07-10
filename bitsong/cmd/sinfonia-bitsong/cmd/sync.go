@@ -295,8 +295,8 @@ func syncMerkledropClaims() error {
 			for _, evt := range txlog.Events {
 				switch evt.Type {
 				case "bitsong.merkledrop.v1beta1.EventClaim":
-					merkledropId, _ := strconv.ParseInt(evt.Attributes[1].Value, 10, 64)
-					index, _ := strconv.ParseInt(evt.Attributes[2].Value, 10, 64)
+					merkledropId, _ := strconv.ParseInt(strings.ReplaceAll(evt.Attributes[1].Value, "\"", ""), 10, 64)
+					index, _ := strconv.ParseInt(strings.ReplaceAll(evt.Attributes[2].Value, "\"", ""), 10, 64)
 					address := txLogs.Signer
 
 					proof := new(model.MerkledropProof)

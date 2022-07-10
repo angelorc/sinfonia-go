@@ -41,6 +41,7 @@ type Config struct {
 type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
+	MerkledropProofWhere() MerkledropProofWhereResolver
 }
 
 type DirectiveRoot struct {
@@ -116,6 +117,7 @@ type ComplexityRoot struct {
 	MerkledropProof struct {
 		Address      func(childComplexity int) int
 		Amount       func(childComplexity int) int
+		Claimed      func(childComplexity int) int
 		CreatedAt    func(childComplexity int) int
 		ID           func(childComplexity int) int
 		Index        func(childComplexity int) int
@@ -253,6 +255,10 @@ type QueryResolver interface {
 	Pool(ctx context.Context, where *model.PoolWhere) (*model.Pool, error)
 	Pools(ctx context.Context, where *model.PoolWhere, in []*primitive.ObjectID, orderBy *model.PoolOrderByENUM, skip *int, limit *int) ([]*model.Pool, error)
 	PoolCount(ctx context.Context, where *model.PoolWhere) (*int, error)
+}
+
+type MerkledropProofWhereResolver interface {
+	Claimed(ctx context.Context, obj *model.MerkledropProofWhere, data *bool) error
 }
 
 type executableSchema struct {
@@ -570,6 +576,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.MerkledropProof.Amount(childComplexity), true
+
+	case "MerkledropProof.claimed":
+		if e.complexity.MerkledropProof.Claimed == nil {
+			break
+		}
+
+		return e.complexity.MerkledropProof.Claimed(childComplexity), true
 
 	case "MerkledropProof.created_at":
 		if e.complexity.MerkledropProof.CreatedAt == nil {
@@ -1543,6 +1556,7 @@ type MerkledropProof @goModel(model: "github.com/angelorc/sinfonia-go/mongo/mode
     address: String!
     amount: Int!
     proofs: [String!]!
+    claimed: Boolean!
 
     created_at: Time!
 }
@@ -1569,6 +1583,7 @@ input MerkledropProofWhere @goModel(model: "github.com/angelorc/sinfonia-go/mong
     address: String
     amount: Int
     proofs: [String]
+    claimed: Boolean
 }`, BuiltIn: false},
 	{Name: "../../schema/message.graphql", Input: `# MODEL
 ##########
@@ -4831,6 +4846,50 @@ func (ec *executionContext) fieldContext_MerkledropProof_proofs(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _MerkledropProof_claimed(ctx context.Context, field graphql.CollectedField, obj *model.MerkledropProof) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MerkledropProof_claimed(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Claimed, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MerkledropProof_claimed(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MerkledropProof",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _MerkledropProof_created_at(ctx context.Context, field graphql.CollectedField, obj *model.MerkledropProof) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_MerkledropProof_created_at(ctx, field)
 	if err != nil {
@@ -6935,6 +6994,8 @@ func (ec *executionContext) fieldContext_Query_merkledropProof(ctx context.Conte
 				return ec.fieldContext_MerkledropProof_amount(ctx, field)
 			case "proofs":
 				return ec.fieldContext_MerkledropProof_proofs(ctx, field)
+			case "claimed":
+				return ec.fieldContext_MerkledropProof_claimed(ctx, field)
 			case "created_at":
 				return ec.fieldContext_MerkledropProof_created_at(ctx, field)
 			}
@@ -7006,6 +7067,8 @@ func (ec *executionContext) fieldContext_Query_merkledropProofs(ctx context.Cont
 				return ec.fieldContext_MerkledropProof_amount(ctx, field)
 			case "proofs":
 				return ec.fieldContext_MerkledropProof_proofs(ctx, field)
+			case "claimed":
+				return ec.fieldContext_MerkledropProof_claimed(ctx, field)
 			case "created_at":
 				return ec.fieldContext_MerkledropProof_created_at(ctx, field)
 			}
@@ -11002,6 +11065,17 @@ func (ec *executionContext) unmarshalInputMerkledropProofWhere(ctx context.Conte
 			if err != nil {
 				return it, err
 			}
+		case "claimed":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimed"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			if err = ec.resolvers.MerkledropProofWhere().Claimed(ctx, &it, data); err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -11998,6 +12072,13 @@ func (ec *executionContext) _MerkledropProof(ctx context.Context, sel ast.Select
 		case "proofs":
 
 			out.Values[i] = ec._MerkledropProof_proofs(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "claimed":
+
+			out.Values[i] = ec._MerkledropProof_claimed(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++

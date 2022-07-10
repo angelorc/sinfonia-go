@@ -9,6 +9,7 @@ type MerkledropProof @goModel(model: "github.com/angelorc/sinfonia-go/mongo/mode
     address: String!
     amount: Int!
     proofs: [String!]!
+    claimed: Boolean!
 
     created_at: Time!
 }
@@ -35,4 +36,5 @@ input MerkledropProofWhere @goModel(model: "github.com/angelorc/sinfonia-go/mong
     address: String
     amount: Int
     proofs: [String]
+    claimed: Boolean
 }
