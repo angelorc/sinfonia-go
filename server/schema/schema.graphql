@@ -190,14 +190,14 @@ type Mutation {
     # Merkledrop TODO: add auth
     ##########
     updateMerkledrop(
-        id: ObjectID,!
+        id: Int!,
         data: MerkledropUpdateReq!
     ): Merkledrop
 
     # MerkledropProof TODO: add auth
     ##########
-    storeMerkledropProofs(
-        id: Int!,
-        file: Upload!
-    ): Int!
+    # storeMerkledropProofs(
+    #    id: Int!,
+    #    file: Upload!
+    # ): Int!
 }

@@ -4,20 +4,13 @@ package graph
 // will be copied through when generating and any unknown code will be moved to the end.
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	c "github.com/angelorc/sinfonia-go/config"
-	"io"
-	"io/ioutil"
-	"mime/multipart"
-	"net/http"
+	"github.com/angelorc/sinfonia-go/server/util"
 	"strconv"
 	"time"
 
-	"github.com/99designs/gqlgen/graphql"
 	"github.com/angelorc/sinfonia-go/mongo/model"
 	"github.com/angelorc/sinfonia-go/server/graph/generated"
 	"github.com/angelorc/sinfonia-go/utility"
@@ -25,120 +18,73 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func (r *mutationResolver) UpdateMerkledrop(ctx context.Context, id primitive.ObjectID, data model.MerkledropUpdateReq) (*model.Merkledrop, error) {
+func (r *mutationResolver) UpdateMerkledrop(ctx context.Context, id int, data model.MerkledropUpdateReq) (*model.Merkledrop, error) {
 	item := model.Merkledrop{}
 
-	if utility.IsZeroVal(id) {
-		return &model.Merkledrop{}, errors.New("missing merkledrop id")
-	}
-
 	// Validate
+	if id <= 0 {
+		return &item, errors.New("invalid merkledrop_id")
+	}
 	if err := utility.ValidateStruct(data); err != nil {
-		return &model.Merkledrop{}, err
+		return &item, err
 	}
 
 	dataUpdate := model.MerkledropUpdate{}
 	dataUpdate.Name = data.Name
 
-	// Upload
+	// Upload Image
 	if data.Image != nil {
-		client := &http.Client{
-			Timeout: time.Second * 10,
-		}
-
-		body := &bytes.Buffer{}
-		bodywriter := multipart.NewWriter(body)
-
-		writer, err := bodywriter.CreateFormFile("file", data.Name)
+		imageUrl, err := util.UploadImage(data)
 		if err != nil {
-			return &model.Merkledrop{}, err
+			return &item, err
 		}
 
-		_, err = io.Copy(writer, data.Image.File)
+		dataUpdate.Image = imageUrl
+	}
+
+	// Store List
+	if data.List != nil && data.List.Size > 0 {
+		parsedList, err := parseMerkleProofsList(data.List.File)
 		if err != nil {
-			return &model.Merkledrop{}, err
+			return &item, err
 		}
 
-		err = bodywriter.Close()
-		if err != nil {
-			return &model.Merkledrop{}, err
+		proof := model.MerkledropProof{}
+		dataProofs := make([]model.MerkledropProofCreate, 0)
+
+		if err := proof.CreateIndexes(); err != nil {
+			return &item, err
 		}
 
-		cloudFlareImagesUrl := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/images/v1", c.GetSecret("CLOUDFLARE_ACCOUNT"))
-		req, err := http.NewRequest("POST", cloudFlareImagesUrl, bytes.NewReader(body.Bytes()))
-		if err != nil {
-			return &model.Merkledrop{}, err
-		}
-
-		req.Header.Set("Content-Type", bodywriter.FormDataContentType())
-		req.Header.Add("Authorization", "Bearer "+c.GetSecret("CLOUDFLARE_IMAGES"))
-		rsp, _ := client.Do(req)
-		if rsp.StatusCode != http.StatusOK {
-			return &model.Merkledrop{}, fmt.Errorf("request failed with response code: %d", rsp.StatusCode)
-		}
-		defer rsp.Body.Close()
-		rspBz, _ := ioutil.ReadAll(rsp.Body)
-
-		var cloudlfareResp model.MerkledropUpdateImageResponse
-		if err := json.Unmarshal(rspBz, &cloudlfareResp); err != nil {
-			return &model.Merkledrop{}, err
-		}
-
-		if cloudlfareResp.Success {
-			if len(cloudlfareResp.Result.Variants) > 0 {
-				dataUpdate.Image = &cloudlfareResp.Result.Variants[0]
+		for addr, r := range parsedList {
+			amount, err := strconv.ParseInt(r.Amount, 10, 64)
+			if err != nil {
+				return &item, err
 			}
+
+			dataProof := model.MerkledropProofCreate{
+				MerkledropID: int64(id),
+				Address:      addr,
+				Index:        r.Index,
+				Amount:       amount,
+				Proofs:       r.Proof,
+				Claimed:      false,
+				CreatedAt:    time.Now(),
+			}
+
+			dataProofs = append(dataProofs, dataProof)
+		}
+
+		if err := proof.StoreMany(dataProofs); err != nil {
+			return &item, err
 		}
 	}
 
-	if err := item.Update(id, &dataUpdate); err != nil {
-		return nil, err
+	if err := item.Update(int64(id), &dataUpdate); err != nil {
+		return &item, err
 	}
 
 	return &item, nil
-}
-
-func (r *mutationResolver) StoreMerkledropProofs(ctx context.Context, id int, file graphql.Upload) (int, error) {
-	if id <= 0 {
-		return 0, errors.New("invalid merkledrop_id")
-	}
-	if file.Size <= 0 {
-		return 0, nil
-	}
-
-	parsedList, err := parseMerkleProofsList(file.File)
-	if err != nil {
-		return 0, err
-	}
-
-	total := 0
-
-	// TODO: store proofs in batch mode
-	for addr, r := range parsedList {
-		item := model.MerkledropProof{}
-
-		amount, err := strconv.ParseInt(r.Amount, 10, 64)
-		if err != nil {
-			return 0, err
-		}
-
-		data := model.MerkledropProofCreate{
-			MerkledropID: int64(id),
-			Address:      addr,
-			Index:        r.Index,
-			Amount:       amount,
-			Proofs:       r.Proof,
-			CreatedAt:    time.Now(),
-		}
-
-		if err := item.Create(&data); err != nil {
-			return total, err
-		}
-
-		total += 1
-	}
-
-	return total, nil
 }
 
 func (r *queryResolver) Transaction(ctx context.Context, where *model.TransactionWhere) (*model.Transaction, error) {

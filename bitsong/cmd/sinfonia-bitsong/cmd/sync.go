@@ -20,6 +20,7 @@ func SyncCmd() *cobra.Command {
 	cmd.AddCommand(
 		GetSyncFantokenCmd(),
 		GetSyncMerkledropCmd(),
+		GetSyncMerkledropClaimCmd(),
 	)
 
 	return cmd
@@ -226,6 +227,98 @@ func syncMerkledrops(client *bitsong.Client) error {
 	}
 
 	fmt.Printf("%d merkledrops synced to block %d ", len(txsLogs), sync.Merkledrops)
+
+	return nil
+}
+
+func GetSyncMerkledropClaimCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "merkledrops-claim",
+		Short:   "sync merkledrops-claim from latest blocks",
+		Example: "sinfonia-bitsong sync merkledrops-claim --mongo-dbname sinfonia-test",
+		Args:    cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			mongoURI, mongoDBName, mongoRetryWrites, err := parseMongoFlags(cmd)
+			if err != nil {
+				return err
+			}
+
+			/**
+			 * Connect to db
+			 */
+			defaultDB := db.Database{
+				DataBaseRefName: "default",
+				URL:             mongoURI,
+				DataBaseName:    mongoDBName,
+				RetryWrites:     strconv.FormatBool(mongoRetryWrites),
+			}
+			defaultDB.Init()
+			defer defaultDB.Disconnect()
+
+			if err := syncMerkledropClaims(); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	}
+
+	addMongoFlags(cmd)
+
+	return cmd
+}
+
+func syncMerkledropClaims() error {
+
+	// get last available height on db
+	lastBlock := model.GetLastHeight()
+
+	// get last block synced from account
+	sync := new(model.Sync)
+	err := sync.One()
+	if err != nil {
+		return err
+	}
+
+	if sync.ID.IsZero() {
+		sync.ID = primitive.NewObjectID()
+		sync.Fantokens = int64(0)
+	}
+
+	txsLogs, err := model.GetTxsAndLogsByMessageType("/bitsong.merkledrop.v1beta1.MsgClaim", sync.Fantokens, lastBlock)
+	if err != nil {
+		return err
+	}
+
+	for _, txLogs := range txsLogs {
+		for _, txlog := range txLogs.Tx.Logs {
+			for _, evt := range txlog.Events {
+				switch evt.Type {
+				case "bitsong.merkledrop.v1beta1.EventClaim":
+					merkledropId, _ := strconv.ParseInt(evt.Attributes[1].Value, 10, 64)
+					index, _ := strconv.ParseInt(evt.Attributes[2].Value, 10, 64)
+					address := txLogs.Signer
+
+					proof := new(model.MerkledropProof)
+					if err := proof.SetClaimed(model.MerkledropProofClaim{
+						MerkledropID: merkledropId,
+						Address:      address,
+						Index:        index,
+					}); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+
+	// update sync with last synced height
+	sync.MerkledropProofs = lastBlock
+	if err := sync.Save(); err != nil {
+		return err
+	}
+
+	fmt.Printf("%d merkledrop proofs synced to block %d ", len(txsLogs), sync.MerkledropProofs)
 
 	return nil
 }

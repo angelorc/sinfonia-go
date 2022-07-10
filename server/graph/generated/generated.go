@@ -135,8 +135,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		StoreMerkledropProofs func(childComplexity int, id int, file graphql.Upload) int
-		UpdateMerkledrop      func(childComplexity int, id primitive.ObjectID, data model.MerkledropUpdateReq) int
+		UpdateMerkledrop func(childComplexity int, id int, data model.MerkledropUpdateReq) int
 	}
 
 	Pool struct {
@@ -224,8 +223,7 @@ type ComplexityRoot struct {
 }
 
 type MutationResolver interface {
-	UpdateMerkledrop(ctx context.Context, id primitive.ObjectID, data model.MerkledropUpdateReq) (*model.Merkledrop, error)
-	StoreMerkledropProofs(ctx context.Context, id int, file graphql.Upload) (int, error)
+	UpdateMerkledrop(ctx context.Context, id int, data model.MerkledropUpdateReq) (*model.Merkledrop, error)
 }
 type QueryResolver interface {
 	Transaction(ctx context.Context, where *model.TransactionWhere) (*model.Transaction, error)
@@ -664,18 +662,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Message.TxID(childComplexity), true
 
-	case "Mutation.storeMerkledropProofs":
-		if e.complexity.Mutation.StoreMerkledropProofs == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_storeMerkledropProofs_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.StoreMerkledropProofs(childComplexity, args["id"].(int), args["file"].(graphql.Upload)), true
-
 	case "Mutation.updateMerkledrop":
 		if e.complexity.Mutation.UpdateMerkledrop == nil {
 			break
@@ -686,7 +672,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateMerkledrop(childComplexity, args["id"].(primitive.ObjectID), args["data"].(model.MerkledropUpdateReq)), true
+		return e.complexity.Mutation.UpdateMerkledrop(childComplexity, args["id"].(int), args["data"].(model.MerkledropUpdateReq)), true
 
 	case "Pool.chain_id":
 		if e.complexity.Pool.ChainID == nil {
@@ -1544,6 +1530,7 @@ input MerkledropWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/mod
 input MerkledropUpdateReq @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.MerkledropUpdateReq") {
     name: String!
     image: Upload
+    list: Upload
 }`, BuiltIn: false},
 	{Name: "../../schema/merkledrop_proof.graphql", Input: `# MODEL
 ##########
@@ -1872,16 +1859,16 @@ type Mutation {
     # Merkledrop TODO: add auth
     ##########
     updateMerkledrop(
-        id: ObjectID,!
+        id: Int!,
         data: MerkledropUpdateReq!
     ): Merkledrop
 
     # MerkledropProof TODO: add auth
     ##########
-    storeMerkledropProofs(
-        id: Int!,
-        file: Upload!
-    ): Int!
+    # storeMerkledropProofs(
+    #    id: Int!,
+    #    file: Upload!
+    # ): Int!
 }`, BuiltIn: false},
 	{Name: "../../schema/swap.graphql", Input: `# MODEL
 ##########
@@ -1997,37 +1984,13 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Mutation_storeMerkledropProofs_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_updateMerkledrop_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int
 	if tmp, ok := rawArgs["id"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["id"] = arg0
-	var arg1 graphql.Upload
-	if tmp, ok := rawArgs["file"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("file"))
-		arg1, err = ec.unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["file"] = arg1
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_updateMerkledrop_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 primitive.ObjectID
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNObjectID2goᚗmongodbᚗorgᚋmongoᚑdriverᚋbsonᚋprimitiveᚐObjectID(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -5278,7 +5241,7 @@ func (ec *executionContext) _Mutation_updateMerkledrop(ctx context.Context, fiel
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateMerkledrop(rctx, fc.Args["id"].(primitive.ObjectID), fc.Args["data"].(model.MerkledropUpdateReq))
+		return ec.resolvers.Mutation().UpdateMerkledrop(rctx, fc.Args["id"].(int), fc.Args["data"].(model.MerkledropUpdateReq))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5338,61 +5301,6 @@ func (ec *executionContext) fieldContext_Mutation_updateMerkledrop(ctx context.C
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_updateMerkledrop_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_storeMerkledropProofs(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_storeMerkledropProofs(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().StoreMerkledropProofs(rctx, fc.Args["id"].(int), fc.Args["file"].(graphql.Upload))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_storeMerkledropProofs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_storeMerkledropProofs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -11125,6 +11033,14 @@ func (ec *executionContext) unmarshalInputMerkledropUpdateReq(ctx context.Contex
 			if err != nil {
 				return it, err
 			}
+		case "list":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("list"))
+			it.List, err = ec.unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -12206,15 +12122,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 				return ec._Mutation_updateMerkledrop(ctx, field)
 			})
 
-		case "storeMerkledropProofs":
-
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_storeMerkledropProofs(ctx, field)
-			})
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -14028,21 +13935,6 @@ func (ec *executionContext) marshalNTransaction2ᚕᚖgithubᚗcomᚋangelorcᚋ
 	wg.Wait()
 
 	return ret
-}
-
-func (ec *executionContext) unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, v interface{}) (graphql.Upload, error) {
-	res, err := graphql.UnmarshalUpload(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, sel ast.SelectionSet, v graphql.Upload) graphql.Marshaler {
-	res := graphql.MarshalUpload(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {

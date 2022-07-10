@@ -111,6 +111,7 @@ type MerkledropUpdate struct {
 type MerkledropUpdateReq struct {
 	Name  string          `json:"name" bson:"name,omitempty" validate:"required"`
 	Image *graphql.Upload `json:"image" bson:"image,omitempty"`
+	List  *graphql.Upload `json:"list" bson:"list,omitempty"`
 }
 
 type MerkledropUpdateImageResponse struct {
@@ -230,7 +231,7 @@ func (m *Merkledrop) Create(data *MerkledropCreate) error {
 	return nil
 }
 
-func (m *Merkledrop) Update(id primitive.ObjectID, data *MerkledropUpdate) error {
+func (m *Merkledrop) Update(id int64, data *MerkledropUpdate) error {
 	// validate
 	if utility.IsZeroVal(id) {
 		return errors.New("missing merkledrop id")
@@ -245,17 +246,17 @@ func (m *Merkledrop) Update(id primitive.ObjectID, data *MerkledropUpdate) error
 	defer cancel()
 
 	// check if fantoken exists
-	collection.FindOne(ctx, bson.M{"_id": id}).Decode(&m)
+	collection.FindOne(ctx, bson.M{"merkledrop_id": id}).Decode(&m)
 	if m.Denom == "" {
 		return errors.New("merkledrop not found")
 	}
 
-	_, err := collection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": data})
+	_, err := collection.UpdateOne(ctx, bson.M{"merkledrop_id": id}, bson.M{"$set": data})
 	if err != nil {
 		return err
 	}
 
-	collection.FindOne(ctx, bson.M{"_id": id}).Decode(&m)
+	collection.FindOne(ctx, bson.M{"merkledrop_id": id}).Decode(&m)
 
 	return nil
 }

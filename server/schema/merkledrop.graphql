@@ -49,4 +49,5 @@ input MerkledropWhere @goModel(model: "github.com/angelorc/sinfonia-go/mongo/mod
 input MerkledropUpdateReq @goModel(model: "github.com/angelorc/sinfonia-go/mongo/model.MerkledropUpdateReq") {
     name: String!
     image: Upload
+    list: Upload
 }

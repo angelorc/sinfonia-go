@@ -22,12 +22,13 @@ const DB_REF_NAME__SYNC = "default"
  */
 
 type Sync struct {
-	ID          primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Accounts    int64              `json:"accounts" bson:"accounts"`
-	Fantokens   int64              `json:"fantokens" bson:"fantokens"`
-	Merkledrops int64              `json:"merkledrops" bson:"merkledrops"`
-	Pools       int64              `json:"pools" bson:"pools"`
-	Swaps       int64              `json:"swaps" bson:"swaps"`
+	ID               primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Accounts         int64              `json:"accounts" bson:"accounts"`
+	Fantokens        int64              `json:"fantokens" bson:"fantokens"`
+	Merkledrops      int64              `json:"merkledrops" bson:"merkledrops"`
+	MerkledropProofs int64              `json:"merkledrop_proofs" bson:"merkledrop_proofs"`
+	Pools            int64              `json:"pools" bson:"pools"`
+	Swaps            int64              `json:"swaps" bson:"swaps"`
 }
 
 /**

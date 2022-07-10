@@ -2,12 +2,14 @@ package model
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"github.com/angelorc/sinfonia-go/mongo/db"
 	"github.com/angelorc/sinfonia-go/utility"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"strings"
 	"time"
 )
 
@@ -36,6 +38,7 @@ type MerkledropProof struct {
 	Address      string   `json:"address" bson:"address"`
 	Amount       int64    `json:"amount" bson:"amount"`
 	Proofs       []string `json:"proofs" bson:"proofs"`
+	Claimed      bool     `json:"claimed" bson:"claimed"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" bson:"created_at,omitempty" validate:"required"`
 }
@@ -77,7 +80,14 @@ type MerkledropProofCreate struct {
 	Index        int64               `json:"index" bson:"index"`
 	Amount       int64               `json:"amount" bson:"amount,omitempty"`
 	Proofs       []string            `json:"proofs" bson:"proofs,omitempty"`
+	Claimed      bool                `json:"claimed" bson:"claimed"`
 	CreatedAt    time.Time           `json:"created_at,omitempty" bson:"created_at,omitempty" validate:"required"`
+}
+
+type MerkledropProofClaim struct {
+	MerkledropID int64  `json:"merkledrop_id" bson:"merkledrop_id,omitempty" validate:"required"`
+	Address      string `json:"address" bson:"address,omitempty" validate:"required"`
+	Index        int64  `json:"index" bson:"index" validate:"required"`
 }
 
 /**
@@ -150,7 +160,39 @@ func (m *MerkledropProof) Count(filter *MerkledropProofWhere) (int, error) {
 
 // Write Operations
 
-func (m *MerkledropProof) Create(data *MerkledropProofCreate) error {
+func (m *MerkledropProof) StoreMany(data []MerkledropProofCreate) error {
+	// validate
+	for _, el := range data {
+		if err := utility.ValidateStruct(el); err != nil {
+			return err
+		}
+	}
+
+	// collection
+	collection := db.GetCollection(DB_COLLECTION_NAME__MERKLEDROP_PROOF, DB_REF_NAME__MERKLEDROP_PROOF)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	items := make([]interface{}, len(data))
+
+	for i, proof := range data {
+		items[i] = proof
+	}
+
+	// operation
+	_, err := collection.InsertMany(ctx, items)
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "bulk write exception") {
+			return fmt.Errorf("duplicate record")
+		}
+
+		return err
+	}
+
+	return nil
+}
+
+func (m *MerkledropProof) SetClaimed(data MerkledropProofClaim) error {
 	// validate
 	if err := utility.ValidateStruct(data); err != nil {
 		return err
@@ -158,33 +200,50 @@ func (m *MerkledropProof) Create(data *MerkledropProofCreate) error {
 
 	// collection
 	collection := db.GetCollection(DB_COLLECTION_NAME__MERKLEDROP_PROOF, DB_REF_NAME__MERKLEDROP_PROOF)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	// TODO: checkPools unique
-	item := new(MerkledropProof)
-	f := bson.M{
-		"$and": []bson.M{
-			{"merkledrop_id": data.MerkledropID},
-			{"address": data.Address},
-			{"index": data.Index},
-		},
+	// get
+	filter := MerkledropProofWhere{
+		MerkledropID: &data.MerkledropID,
+		Address:      &data.Address,
+		Index:        &data.Index,
 	}
-	collection.FindOne(ctx, f).Decode(&item)
+	collection.FindOne(ctx, &filter).Decode(&m)
 
-	if !item.ID.IsZero() {
-		return errors.New("item already stored")
+	if m.ID.IsZero() {
+		return fmt.Errorf("claim not found")
 	}
 
-	// operation
-	res, err := collection.InsertOne(ctx, data)
+	// update
+	_, err := collection.UpdateOne(ctx, filter, bson.M{"$set": bson.M{"claimed": true}})
 	if err != nil {
 		return err
 	}
 
-	_, ok := res.InsertedID.(primitive.ObjectID)
-	if !ok {
-		return errors.New("server error")
+	collection.FindOne(ctx, bson.M{"merkledrop_id": data.MerkledropID}).Decode(&m)
+
+	return nil
+}
+
+func (m *MerkledropProof) CreateIndexes() error {
+	index := mongo.IndexModel{
+		Keys: bson.D{
+			{"merkledrop_id", 1},
+			{"address", 1},
+			{"index", 1},
+		},
+		Options: options.Index().SetUnique(true),
+	}
+
+	// collection
+	collection := db.GetCollection(DB_COLLECTION_NAME__MERKLEDROP_PROOF, DB_REF_NAME__MERKLEDROP_PROOF)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	_, err := collection.Indexes().CreateOne(ctx, index)
+	if err != nil {
+		return fmt.Errorf("error while creting indexes on merkledrop_proofs: %v", err)
 	}
 
 	return nil
