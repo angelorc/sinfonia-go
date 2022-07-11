@@ -28,8 +28,8 @@ func GetBitsongConfig() *Config {
 	}*/
 	return &Config{
 		ChainID:       "bitsong-2b",
-		RPCAddr:       "https://rpc.fantest-1.bitsong.network:443",
-		GRPCAddr:      "http://49.12.200.27:9090",
+		RPCAddr:       "https://rpc.explorebitsong.com:443",
+		GRPCAddr:      "http://88.99.184.249:9090",
 		GRPCInsecure:  true,
 		AccountPrefix: "bitsong",
 		Timeout:       "10s",

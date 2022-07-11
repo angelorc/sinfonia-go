@@ -11,7 +11,7 @@ type Config struct {
 
 func GetOsmosisConfig() *Config {
 	return &Config{
-		ChainID:       "osmosis-sinfonia-test-1",
+		ChainID:       "osmosis-1",
 		RPCAddr:       "https://rpc.osmo-test.bitsong.network:443",
 		GRPCAddr:      "http://157.90.168.95:9090",
 		GRPCInsecure:  true,
