@@ -159,6 +159,16 @@ func syncFantokens() error {
 	return nil
 }
 
+func getAttrs(attrKey string, attrs []model.Attribute) (value string) {
+	for _, attr := range attrs {
+		if attr.Key == attrKey {
+			return attr.Value
+		}
+	}
+
+	return value
+}
+
 func syncMerkledrops(client *bitsong.Client) error {
 	// get last available height on db
 	lastBlock := model.GetLastHeight()
@@ -182,7 +192,7 @@ func syncMerkledrops(client *bitsong.Client) error {
 			for _, evt := range txlog.Events {
 				switch evt.Type {
 				case "bitsong.merkledrop.v1beta1.EventCreate":
-					idStr := strings.ReplaceAll(evt.Attributes[1].Value, "\"", "")
+					idStr := strings.ReplaceAll(getAttrs("merkledrop_id", evt.Attributes), "\"", "")
 					merkledropId, _ := strconv.ParseInt(idStr, 10, 64)
 
 					mRes, err := client.QueryMerkledropByID(uint64(merkledropId))
