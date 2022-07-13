@@ -9,7 +9,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
-	c "github.com/angelorc/sinfonia-go/config"
+	"github.com/angelorc/sinfonia-go/config"
 	"github.com/angelorc/sinfonia-go/server/graph"
 	"github.com/angelorc/sinfonia-go/server/graph/generated"
 	w3t "github.com/angelorc/sinfonia-go/server/web3token"
@@ -32,9 +32,9 @@ func getHeaders(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func InitGraphql(e *echo.Echo) {
+func InitGraphql(cfg config.Config, e *echo.Echo) {
 	// Resolvers && Directives
-	resolver := graph.Resolver{Token: &token}
+	resolver := graph.Resolver{Token: &token, Config: cfg}
 	config := generated.Config{Resolvers: &resolver}
 	config.Directives.Auth = func(ctx context.Context, obj interface{}, next graphql.Resolver) (interface{}, error) {
 		web3token, err := w3t.NewWeb3TokenFromBearer(*resolver.Token)
@@ -61,7 +61,7 @@ func InitGraphql(e *echo.Echo) {
 	queryHandler.Use(extension.AutomaticPersistedQuery{Cache: lru.New(100)})
 	queryHandler.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		rc := graphql.GetOperationContext(ctx)
-		if playgroundPassword == c.GetSecret("GRAPHQL_PLAYGROUND_PASS") {
+		if playgroundPassword == cfg.GraphQL.PlaygroundPass {
 			rc.DisableIntrospection = false
 		} else {
 			rc.DisableIntrospection = true
@@ -69,7 +69,7 @@ func InitGraphql(e *echo.Echo) {
 		return next(ctx)
 	})
 
-	e.GET("/", echo.WrapHandler(playground.Handler("GraphQL Playground", c.GetSecret("GRAPHQL_ENDPOINT"))))
+	e.GET("/", echo.WrapHandler(playground.Handler("GraphQL Playground", cfg.GraphQL.Endpoint)))
 	//e.POST("/query", echo.WrapHandler(dataloader.DataLoaderMiddleware(queryHandler)))
 	e.POST("/query", echo.WrapHandler(queryHandler))
 }

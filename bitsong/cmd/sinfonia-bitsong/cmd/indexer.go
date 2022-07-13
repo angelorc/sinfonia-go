@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/angelorc/sinfonia-go/bitsong/chain"
+	"github.com/angelorc/sinfonia-go/config"
 	"github.com/angelorc/sinfonia-go/indexer"
 	"github.com/angelorc/sinfonia-go/mongo/db"
 	"github.com/angelorc/sinfonia-go/mongo/repository"
@@ -31,31 +32,29 @@ func GetIndexerParserCmd() *cobra.Command {
 		Example: "sinfonia-bitsong indexer parse --start-height=1 --end-height=100 --concurrent 2 --mongo-dbname sinfonia-test",
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			mongoURI, err := cmd.Flags().GetString(flagMongoUri)
-			if err != nil || mongoURI == "" {
-				return fmt.Errorf("indicate the mongo uri connection\n")
+			cfgPath, err := config.ParseFlags()
+			if err != nil {
+				return err
 			}
 
-			mongoDBName, err := cmd.Flags().GetString(flagMongoDBName)
-			if err != nil || mongoDBName == "" {
-				return fmt.Errorf("indicate the mongo db name eg: --mongo-dbname [name]\n")
+			cfg, err := config.NewConfig(cfgPath)
+			if err != nil {
+				return err
 			}
-
-			mongoRetryWrites, _ := cmd.Flags().GetBool(flagMongoRetry)
 
 			/**
 			 * Connect to db
 			 */
 			defaultDB := db.Database{
 				DataBaseRefName: "default",
-				URL:             mongoURI,
-				DataBaseName:    mongoDBName,
-				RetryWrites:     strconv.FormatBool(mongoRetryWrites),
+				URL:             cfg.Mongo.Uri,
+				DataBaseName:    cfg.Mongo.DbName,
+				RetryWrites:     strconv.FormatBool(cfg.Mongo.Retry),
 			}
 			defaultDB.Init()
 			defer defaultDB.Disconnect()
 
-			client, err := chain.NewClient(chain.GetBitsongConfig())
+			client, err := chain.NewClient(&cfg.Bitsong)
 			if err != nil {
 				log.Fatalf("failed to get RPC endpoints on chain %s. err: %v", "bitsong", err)
 			}
@@ -108,9 +107,7 @@ func GetIndexerParserCmd() *cobra.Command {
 	cmd.Flags().String(flagModules, "*", "modules to parse eg: * for all or \"blocks,transactions,messages,block-results\" ")
 	cmd.Flags().Int(flagConcurrent, 2, "how many concurrent indexer (do not abuse!)")
 
-	cmd.Flags().String(flagMongoUri, "mongodb://localhost:27017", "the mongo uri connection")
-	cmd.Flags().String(flagMongoDBName, "", "the mongo db name to use")
-	cmd.Flags().Bool(flagMongoRetry, true, "mongo retrywrites param")
+	addConfigFlag(cmd)
 
 	return cmd
 }

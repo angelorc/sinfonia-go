@@ -1,0 +1,30 @@
+graphql:
+  address: "127.0.0.1"
+  port: "9090"
+  endpoint: "/query"
+  playground_pass: ""
+
+mongo:
+  uri: "mongodb://localhost:27017"
+  dbname: "sinfonia-test"
+  retry: true
+
+cloudflare:
+  account: "xx"
+  images: "xx"
+
+bitsong:
+  chain-id: "bitsong-2b"
+  account-prefix: "bitsong"
+  rpc-addr: "https://rpc.explorebitsong.com:443"
+  grpc-addr: "http://88.99.184.249:9090"
+  grpc-insecure: true
+  timeout: "10s"
+
+osmosis:
+  chain-id: "osmosis-1"
+  account-prefix: "osmo"
+  rpc-addr: "https://rpc.osmo-test.bitsong.network:443"
+  grpc-addr: "http://157.90.168.95:9090"
+  grpc-insecure: true
+  timeout: "10s"

@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"fmt"
+	"github.com/angelorc/sinfonia-go/config"
 	tmcli "github.com/angelorc/sinfonia-go/tendermint"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"google.golang.org/grpc"
@@ -27,14 +28,14 @@ import (
 var _ indexertypes.ClientI = &Client{}
 
 type Client struct {
-	config *Config
+	config *config.ChainConfig
 	rpc    rpcclient.Client
 	grpc   *grpc.ClientConn
 	txSC   tx.ServiceClient
 	codec  appparams.EncodingConfig
 }
 
-func NewClient(config *Config) (*Client, error) {
+func NewClient(config *config.ChainConfig) (*Client, error) {
 	timeout, _ := time.ParseDuration(config.Timeout)
 
 	rpcClient, err := tmcli.NewClient(config.RPCAddr, timeout)

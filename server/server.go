@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/angelorc/sinfonia-go/config"
 	"github.com/angelorc/sinfonia-go/utility"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -10,7 +11,7 @@ import (
 	"time"
 )
 
-func Start() {
+func Start(cfg config.Config) {
 	// Setup & configure server
 	// more info -> https://echo.labstack.com/
 	e := echo.New()
@@ -20,14 +21,14 @@ func Start() {
 	e.HideBanner = true
 
 	// Load routes from graphql
-	InitGraphql(e)
+	InitGraphql(cfg, e)
 
 	// Load routes from rest
 	InitRest(e)
 
 	// Parse server routes
 	go func() {
-		if err := e.Start(":" + "9090"); err != nil {
+		if err := e.Start(cfg.GraphQL.Address + ":" + cfg.GraphQL.Port); err != nil {
 			e.Logger.Info("shutting down the server")
 		}
 	}()

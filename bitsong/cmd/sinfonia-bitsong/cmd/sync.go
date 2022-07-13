@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	bitsong "github.com/angelorc/sinfonia-go/bitsong/chain"
+	"github.com/angelorc/sinfonia-go/config"
 	"github.com/angelorc/sinfonia-go/mongo/db"
 	"github.com/angelorc/sinfonia-go/mongo/model"
 	"github.com/spf13/cobra"
@@ -33,7 +34,12 @@ func GetSyncFantokenCmd() *cobra.Command {
 		Example: "sinfonia-bitsong sync fantokens --mongo-dbname sinfonia-test",
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			mongoURI, mongoDBName, mongoRetryWrites, err := parseMongoFlags(cmd)
+			cfgPath, err := config.ParseFlags()
+			if err != nil {
+				return err
+			}
+
+			cfg, err := config.NewConfig(cfgPath)
 			if err != nil {
 				return err
 			}
@@ -43,9 +49,9 @@ func GetSyncFantokenCmd() *cobra.Command {
 			 */
 			defaultDB := db.Database{
 				DataBaseRefName: "default",
-				URL:             mongoURI,
-				DataBaseName:    mongoDBName,
-				RetryWrites:     strconv.FormatBool(mongoRetryWrites),
+				URL:             cfg.Mongo.Uri,
+				DataBaseName:    cfg.Mongo.DbName,
+				RetryWrites:     strconv.FormatBool(cfg.Mongo.Retry),
 			}
 			defaultDB.Init()
 			defer defaultDB.Disconnect()
@@ -58,7 +64,7 @@ func GetSyncFantokenCmd() *cobra.Command {
 		},
 	}
 
-	addMongoFlags(cmd)
+	addConfigFlag(cmd)
 
 	return cmd
 }
@@ -70,7 +76,12 @@ func GetSyncMerkledropCmd() *cobra.Command {
 		Example: "sinfonia-bitsong sync merkledrops --mongo-dbname sinfonia-test",
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			mongoURI, mongoDBName, mongoRetryWrites, err := parseMongoFlags(cmd)
+			cfgPath, err := config.ParseFlags()
+			if err != nil {
+				return err
+			}
+
+			cfg, err := config.NewConfig(cfgPath)
 			if err != nil {
 				return err
 			}
@@ -80,14 +91,14 @@ func GetSyncMerkledropCmd() *cobra.Command {
 			 */
 			defaultDB := db.Database{
 				DataBaseRefName: "default",
-				URL:             mongoURI,
-				DataBaseName:    mongoDBName,
-				RetryWrites:     strconv.FormatBool(mongoRetryWrites),
+				URL:             cfg.Mongo.Uri,
+				DataBaseName:    cfg.Mongo.DbName,
+				RetryWrites:     strconv.FormatBool(cfg.Mongo.Retry),
 			}
 			defaultDB.Init()
 			defer defaultDB.Disconnect()
 
-			client, err := bitsong.NewClient(bitsong.GetBitsongConfig())
+			client, err := bitsong.NewClient(&cfg.Bitsong)
 			if err != nil {
 				return fmt.Errorf("failed to get RPC endpoints on chain %s. err: %v", "bitsong", err)
 			}
@@ -100,7 +111,7 @@ func GetSyncMerkledropCmd() *cobra.Command {
 		},
 	}
 
-	addMongoFlags(cmd)
+	addConfigFlag(cmd)
 
 	return cmd
 }
@@ -248,7 +259,12 @@ func GetSyncMerkledropClaimCmd() *cobra.Command {
 		Example: "sinfonia-bitsong sync merkledrops-claim --mongo-dbname sinfonia-test",
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			mongoURI, mongoDBName, mongoRetryWrites, err := parseMongoFlags(cmd)
+			cfgPath, err := config.ParseFlags()
+			if err != nil {
+				return err
+			}
+
+			cfg, err := config.NewConfig(cfgPath)
 			if err != nil {
 				return err
 			}
@@ -258,9 +274,9 @@ func GetSyncMerkledropClaimCmd() *cobra.Command {
 			 */
 			defaultDB := db.Database{
 				DataBaseRefName: "default",
-				URL:             mongoURI,
-				DataBaseName:    mongoDBName,
-				RetryWrites:     strconv.FormatBool(mongoRetryWrites),
+				URL:             cfg.Mongo.Uri,
+				DataBaseName:    cfg.Mongo.DbName,
+				RetryWrites:     strconv.FormatBool(cfg.Mongo.Retry),
 			}
 			defaultDB.Init()
 			defer defaultDB.Disconnect()
@@ -273,7 +289,7 @@ func GetSyncMerkledropClaimCmd() *cobra.Command {
 		},
 	}
 
-	addMongoFlags(cmd)
+	addConfigFlag(cmd)
 
 	return cmd
 }

@@ -34,7 +34,7 @@ func (r *mutationResolver) UpdateMerkledrop(ctx context.Context, id int, data mo
 
 	// Upload Image
 	if data.Image != nil {
-		imageUrl, err := util.UploadImage(data)
+		imageUrl, err := util.UploadImage(r.Config.Cloudflare, data)
 		if err != nil {
 			return &item, err
 		}

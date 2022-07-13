@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func UploadImage(data model.MerkledropUpdateReq) (*string, error) {
+func UploadImage(cfg c.CloudflareConfig, data model.MerkledropUpdateReq) (*string, error) {
 	var imageUrl *string
 
 	client := &http.Client{
@@ -38,14 +38,14 @@ func UploadImage(data model.MerkledropUpdateReq) (*string, error) {
 		return imageUrl, err
 	}
 
-	cloudFlareImagesUrl := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/images/v1", c.GetSecret("CLOUDFLARE_ACCOUNT"))
+	cloudFlareImagesUrl := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/images/v1", cfg.Account)
 	req, err := http.NewRequest("POST", cloudFlareImagesUrl, bytes.NewReader(body.Bytes()))
 	if err != nil {
 		return imageUrl, err
 	}
 
 	req.Header.Set("Content-Type", bodywriter.FormDataContentType())
-	req.Header.Add("Authorization", "Bearer "+c.GetSecret("CLOUDFLARE_IMAGES"))
+	req.Header.Add("Authorization", "Bearer "+cfg.Images)
 	rsp, _ := client.Do(req)
 	if rsp.StatusCode != http.StatusOK {
 		return imageUrl, fmt.Errorf("request failed with response code: %d", rsp.StatusCode)

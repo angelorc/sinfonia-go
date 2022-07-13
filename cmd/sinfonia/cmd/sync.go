@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/angelorc/sinfonia-go/config"
 	"github.com/angelorc/sinfonia-go/mongo/db"
 	"github.com/angelorc/sinfonia-go/mongo/model"
 	"github.com/spf13/cobra"
@@ -27,7 +28,12 @@ func GetSyncAccountCmd() *cobra.Command {
 		Example: "sinfonia sync account --mongo-dbname sinfonia-test",
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			mongoURI, mongoDBName, mongoRetryWrites, err := parseMongoFlags(cmd)
+			cfgPath, err := config.ParseFlags()
+			if err != nil {
+				return err
+			}
+
+			cfg, err := config.NewConfig(cfgPath)
 			if err != nil {
 				return err
 			}
@@ -37,9 +43,9 @@ func GetSyncAccountCmd() *cobra.Command {
 			 */
 			defaultDB := db.Database{
 				DataBaseRefName: "default",
-				URL:             mongoURI,
-				DataBaseName:    mongoDBName,
-				RetryWrites:     strconv.FormatBool(mongoRetryWrites),
+				URL:             cfg.Mongo.Uri,
+				DataBaseName:    cfg.Mongo.DbName,
+				RetryWrites:     strconv.FormatBool(cfg.Mongo.Retry),
 			}
 			defaultDB.Init()
 			defer defaultDB.Disconnect()
@@ -52,7 +58,7 @@ func GetSyncAccountCmd() *cobra.Command {
 		},
 	}
 
-	addMongoFlags(cmd)
+	addConfigFlag(cmd)
 
 	return cmd
 }
