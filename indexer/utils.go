@@ -39,6 +39,7 @@ func IsAllowedTx(allowedActions []string, logs sdk.ABCIMessageLogs) bool {
 		for _, evt := range log.Events {
 			if evt.Type == "message" {
 				action := GetAttrByKey("action", evt.Attributes)
+				fmt.Printf(*action)
 
 				if action != nil {
 					fmt.Println(*action)
