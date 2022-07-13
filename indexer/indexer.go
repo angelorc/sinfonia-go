@@ -192,7 +192,10 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 			"/osmosis.lockup.ExtendLockup",
 		}
 
-		IsAllowedTx(allowedActions, sdkTxRes.Logs)
+		ok := IsAllowedTx(allowedActions, sdkTxRes.Logs)
+		if !ok {
+			continue
+		}
 
 		txID := model.TxHashToObjectID(tx.Hash())
 		hashStr := hex.EncodeToString(tx.Hash())
