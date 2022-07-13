@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"github.com/angelorc/sinfonia-go/bitsong/chain"
 	"github.com/angelorc/sinfonia-go/indexer"
 	"github.com/angelorc/sinfonia-go/mongo/db"
+	"github.com/angelorc/sinfonia-go/mongo/repository"
 	"github.com/spf13/cobra"
 	"log"
 	"strconv"
@@ -24,10 +26,10 @@ func IndexerCmd() *cobra.Command {
 
 func GetIndexerParserCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "parse [from-block] [to-block]",
+		Use:     "parse",
 		Short:   "parse the bitsong blockchain from block to block",
-		Example: "sinfonia-bitsong indexer parse 1 100 --concurrent 2 --mongo-dbname sinfonia-test",
-		Args:    cobra.RangeArgs(0, 2),
+		Example: "sinfonia-bitsong indexer parse --start-height=1 --end-height=100 --concurrent 2 --mongo-dbname sinfonia-test",
+		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			mongoURI, err := cmd.Flags().GetString(flagMongoUri)
 			if err != nil || mongoURI == "" {
@@ -58,23 +60,24 @@ func GetIndexerParserCmd() *cobra.Command {
 				log.Fatalf("failed to get RPC endpoints on chain %s. err: %v", "bitsong", err)
 			}
 
-			fromBlock := int64(1)
-			toBlock := fromBlock
+			blockRepo := repository.NewBlockRepository()
 
-			if len(args) > 0 {
-				fromBlock, err = strconv.ParseInt(args[0], 0, 64)
+			startHeight, err := cmd.Flags().GetInt64(flagStartHeight)
+			if err != nil {
+				return err
 			}
 
-			if len(args) > 1 {
-				toBlock, err = strconv.ParseInt(args[1], 0, 64)
+			endHeight, err := cmd.Flags().GetInt64(flagEndHeight)
+			if err != nil {
+				return err
 			}
 
-			if fromBlock <= 0 {
-				fromBlock = 1
+			if startHeight <= 0 {
+				startHeight = blockRepo.Latest().Height + 1
 			}
 
-			if toBlock <= fromBlock {
-				toBlock = fromBlock
+			if endHeight <= startHeight {
+				endHeight = client.LatestBlockHeight(context.Background())
 			}
 
 			concurrent, err := cmd.Flags().GetInt(flagConcurrent)
@@ -93,11 +96,14 @@ func GetIndexerParserCmd() *cobra.Command {
 
 			indexer.
 				NewIndexer(client, parseModules(modulesStr), concurrent).
-				Parse(fromBlock, toBlock)
+				Parse(startHeight, endHeight)
 
 			return nil
 		},
 	}
+
+	cmd.Flags().Int64(flagStartHeight, 0, "parse from height, default is 0 mean that will be used the latest block stored in db")
+	cmd.Flags().Int64(flagEndHeight, 0, "parse to height, default is 0 mean that will be used the current block on chain")
 
 	cmd.Flags().String(flagModules, "*", "modules to parse eg: * for all or \"blocks,transactions,messages,block-results\" ")
 	cmd.Flags().Int(flagConcurrent, 2, "how many concurrent indexer (do not abuse!)")

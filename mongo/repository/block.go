@@ -25,14 +25,13 @@ type blockRepository struct {
 }
 
 type BlockRepository interface {
-	Find(filter *types.BlockFilter) *modelv2.Block
+	Count(filter *types.BlockFilter) (int64, error)
+	Find(filter *types.BlockFilter, pagination *types.PaginationReq) ([]*modelv2.Block, error)
+	FindOne(filter *types.BlockFilter) *modelv2.Block
+	EnsureIndexes() (string, error)
+
 	FindByID(id primitive.ObjectID) *modelv2.Block
 	FindByHeight(height int64) *modelv2.Block
-
-	List(filter *types.BlockFilter, pagination *types.PaginationReq) ([]*modelv2.Block, error)
-	Count(filter *types.BlockFilter) (int64, error)
-
-	EnsureIndexes() (string, error)
 
 	Create(data *types.BlockCreateReq) (*modelv2.Block, error)
 
@@ -42,13 +41,13 @@ type BlockRepository interface {
 
 func NewBlockRepository() BlockRepository {
 	coll := db.GetCollection(blockCollectionName, blockDbRefName)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	//defer cancel()
 
 	return &blockRepository{context: ctx, collection: coll}
 }
 
-func (b *blockRepository) Find(filter *types.BlockFilter) *modelv2.Block {
+func (b *blockRepository) FindOne(filter *types.BlockFilter) *modelv2.Block {
 	var block modelv2.Block
 	b.collection.FindOne(b.context, &filter).Decode(&block)
 
@@ -56,24 +55,14 @@ func (b *blockRepository) Find(filter *types.BlockFilter) *modelv2.Block {
 }
 
 func (b *blockRepository) FindByID(id primitive.ObjectID) *modelv2.Block {
-	var block modelv2.Block
-
-	filter := types.BlockFilter{Id: &id}
-	b.collection.FindOne(b.context, &filter).Decode(&block)
-
-	return &block
+	return b.FindOne(&types.BlockFilter{Id: &id})
 }
 
 func (b *blockRepository) FindByHeight(height int64) *modelv2.Block {
-	var block modelv2.Block
-
-	filter := types.BlockFilter{Height: &height}
-	b.collection.FindOne(b.context, &filter).Decode(&block)
-
-	return &block
+	return b.FindOne(&types.BlockFilter{Height: &height})
 }
 
-func (b *blockRepository) List(filter *types.BlockFilter, pagination *types.PaginationReq) ([]*modelv2.Block, error) {
+func (b *blockRepository) Find(filter *types.BlockFilter, pagination *types.PaginationReq) ([]*modelv2.Block, error) {
 	var blocks []*modelv2.Block
 
 	orderByKey := "height"
@@ -113,11 +102,18 @@ func (b *blockRepository) Count(filter *types.BlockFilter) (int64, error) {
 }
 
 func (b *blockRepository) Create(data *types.BlockCreateReq) (*modelv2.Block, error) {
+	// create id
+	blockID, err := primitive.ObjectIDFromHex(data.Hash[:24])
+	if err != nil {
+		panic(err)
+	}
+	data.ID = blockID
+
 	if err := data.Validate(); err != nil {
 		return &modelv2.Block{}, err
 	}
 
-	res, err := b.collection.InsertOne(b.context, data)
+	res, err := b.collection.InsertOne(b.context, &data)
 	if err != nil {
 		return &modelv2.Block{}, err
 	}
@@ -147,7 +143,11 @@ func (b *blockRepository) Latest() *modelv2.Block {
 	opts := options.FindOne()
 	opts.SetSort(map[string]int{"height": -1})
 
-	b.collection.FindOne(b.context, &types.BlockFilter{}, opts).Decode(block)
+	b.collection.FindOne(b.context, &types.BlockFilter{}, opts).Decode(&block)
+
+	if block.Height == 0 {
+		block.Height = 1
+	}
 
 	return &block
 }

@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/angelorc/sinfonia-go/mongo/repository"
+	types2 "github.com/angelorc/sinfonia-go/mongo/types"
 	"log"
 	"strings"
 	"sync"
@@ -128,22 +130,20 @@ func (i *Indexer) IndexTransactions(height int64) error {
 		return fmt.Errorf("block not found")
 	}
 
-	blockID := model.TxHashToObjectID(block.BlockID.Hash)
-	hashStr := hex.EncodeToString(block.BlockID.Hash)
-	data := &model.BlockCreate{
-		ID:      &blockID,
+	blockRepo := repository.NewBlockRepository()
+	blockDB, err := blockRepo.Create(&types2.BlockCreateReq{
 		ChainID: block.Block.ChainID,
 		Height:  block.Block.Height,
-		Hash:    hashStr,
+		Hash:    block.BlockID.Hash.String(),
 		Time:    block.Block.Time,
-	}
-	err = model.InsertBlock(data)
+	})
+
 	if err != nil {
 		log.Fatalf("[Height %d] - Failed to write block to db. Err: %s", height, err.Error())
 	}
 
 	if i.modules.Transactions {
-		i.parseTxs(blockID, block.Block.ChainID, height, block.Block.Data.Txs, block.Block.Time)
+		i.parseTxs(blockDB.ID, block.Block.ChainID, height, block.Block.Data.Txs, block.Block.Time)
 	}
 
 	if i.modules.BlockResults {

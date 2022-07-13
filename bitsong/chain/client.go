@@ -69,6 +69,15 @@ func (c *Client) ChainID() string {
 	return c.config.ChainID
 }
 
+func (c *Client) LatestBlockHeight(ctx context.Context) int64 {
+	status, err := c.rpc.Status(ctx)
+	if err != nil {
+		return 0
+	}
+
+	return status.SyncInfo.LatestBlockHeight
+}
+
 func (c *Client) QueryBlock(ctx context.Context, height *int64) (*coretypes.ResultBlock, error) {
 	return c.rpc.Block(ctx, height)
 }

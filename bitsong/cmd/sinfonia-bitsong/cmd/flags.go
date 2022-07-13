@@ -9,6 +9,9 @@ const (
 	flagModules    = "modules"
 	flagConcurrent = "concurrent"
 
+	flagStartHeight = "start-height"
+	flagEndHeight   = "end-height"
+
 	flagMongoUri    = "mongo-uri"
 	flagMongoDBName = "mongo-dbname"
 	flagMongoRetry  = "mongo-retry"
