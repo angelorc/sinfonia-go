@@ -1,6 +1,7 @@
 package indexer
 
 import (
+	"fmt"
 	"github.com/angelorc/sinfonia-go/mongo/model"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"golang.org/x/exp/slices"
@@ -40,6 +41,7 @@ func IsAllowedTx(allowedActions []string, logs sdk.ABCIMessageLogs) bool {
 				action := GetAttrByKey("action", evt.Attributes)
 
 				if action != nil {
+					fmt.Println(*action)
 					if slices.Contains(allowedActions, *action) {
 						return true
 					}
