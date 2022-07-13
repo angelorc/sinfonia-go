@@ -3,6 +3,7 @@ package indexer
 import (
 	"github.com/angelorc/sinfonia-go/mongo/model"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"golang.org/x/exp/slices"
 )
 
 func ConvertCoin(coin sdk.Coin) model.Coin {
@@ -20,6 +21,34 @@ func ConvertCoins(coins sdk.Coins) *[]model.Coin {
 	}
 
 	return &newCoins
+}
+
+func GetAttrByKey(key string, attrs []sdk.Attribute) *string {
+	for _, attr := range attrs {
+		if attr.Key == key {
+			return &attr.Value
+		}
+	}
+
+	return nil
+}
+
+func IsAllowedTx(allowedActions []string, logs sdk.ABCIMessageLogs) bool {
+	for _, log := range logs {
+		for _, evt := range log.Events {
+			if evt.Type == "message" {
+				action := GetAttrByKey("action", evt.Attributes)
+
+				if action != nil {
+					if slices.Contains(allowedActions, *action) {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	return false
 }
 
 func ConvertABCIMessageLogs(logs sdk.ABCIMessageLogs) []model.ABCIMessageLog {

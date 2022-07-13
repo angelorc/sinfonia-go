@@ -166,6 +166,34 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 			continue
 		}
 
+		allowedActions := []string{
+			"/bitsong.fantoken.Issue",
+			"/bitsong.fantoken.Mint",
+			"/bitsong.fantoken.Burn",
+			"/bitsong.fantoken.DisableMint",
+			"/bitsong.fantoken.SetMinter",
+			"/bitsong.fantoken.SetAuthority",
+			"/bitsong.fantoken.SetUri",
+			"/bitsong.merkledrop.v1beta1.Create",
+			"/bitsong.merkledrop.v1beta1.Claim",
+			"/osmosis.gamm.v1beta1.JoinPool",
+			"/osmosis.gamm.v1beta1.ExitPool",
+			"/osmosis.gamm.v1beta1.SwapExactAmountIn",
+			"/osmosis.gamm.v1beta1.SwapExactAmountOut",
+			"/osmosis.gamm.v1beta1.JoinSwapExternAmountIn",
+			"/osmosis.gamm.v1beta1.JoinSwapShareAmountOut",
+			"/osmosis.gamm.v1beta1.ExitSwapExternAmountOut",
+			"/osmosis.gamm.v1beta1.ExitSwapShareAmountIn",
+			"/osmosis.incentives.CreateGauge",
+			"/osmosis.incentives.AddToGauge",
+			"/osmosis.lockup.LockTokens",
+			"/osmosis.lockup.BeginUnlockingAll",
+			"/osmosis.lockup.BeginUnlocking",
+			"/osmosis.lockup.ExtendLockup",
+		}
+
+		IsAllowedTx(allowedActions, sdkTxRes.Logs)
+
 		txID := model.TxHashToObjectID(tx.Hash())
 		hashStr := hex.EncodeToString(tx.Hash())
 
