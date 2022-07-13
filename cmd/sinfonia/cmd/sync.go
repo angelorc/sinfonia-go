@@ -28,7 +28,7 @@ func GetSyncAccountCmd() *cobra.Command {
 		Example: "sinfonia sync account --mongo-dbname sinfonia-test",
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfgPath, err := config.ParseFlags()
+			cfgPath, err := cmd.Flags().GetString(flagConfig)
 			if err != nil {
 				return err
 			}

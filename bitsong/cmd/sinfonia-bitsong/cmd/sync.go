@@ -34,7 +34,7 @@ func GetSyncFantokenCmd() *cobra.Command {
 		Example: "sinfonia-bitsong sync fantokens --mongo-dbname sinfonia-test",
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfgPath, err := config.ParseFlags()
+			cfgPath, err := cmd.Flags().GetString(flagConfig)
 			if err != nil {
 				return err
 			}
@@ -76,7 +76,7 @@ func GetSyncMerkledropCmd() *cobra.Command {
 		Example: "sinfonia-bitsong sync merkledrops --mongo-dbname sinfonia-test",
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfgPath, err := config.ParseFlags()
+			cfgPath, err := cmd.Flags().GetString(flagConfig)
 			if err != nil {
 				return err
 			}
@@ -259,7 +259,7 @@ func GetSyncMerkledropClaimCmd() *cobra.Command {
 		Example: "sinfonia-bitsong sync merkledrops-claim --mongo-dbname sinfonia-test",
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfgPath, err := config.ParseFlags()
+			cfgPath, err := cmd.Flags().GetString(flagConfig)
 			if err != nil {
 				return err
 			}

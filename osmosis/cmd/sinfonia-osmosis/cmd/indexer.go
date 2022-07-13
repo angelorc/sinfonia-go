@@ -32,7 +32,7 @@ func GetIndexerParserCmd() *cobra.Command {
 		Example: "sinfonia-osmosis indexer parse 1 100 --concurrent 2 --mongo-dbname sinfonia-test",
 		Args:    cobra.RangeArgs(0, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfgPath, err := config.ParseFlags()
+			cfgPath, err := cmd.Flags().GetString(flagConfig)
 			if err != nil {
 				return err
 			}

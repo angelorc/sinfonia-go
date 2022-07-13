@@ -38,7 +38,7 @@ func GetSyncPoolCmd() *cobra.Command {
 		Example: "sinfonia-osmosis sync pools --mongo-dbname sinfonia-test",
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfgPath, err := config.ParseFlags()
+			cfgPath, err := cmd.Flags().GetString(flagConfig)
 			if err != nil {
 				return err
 			}
@@ -85,7 +85,7 @@ func GetSyncSwapCmd() *cobra.Command {
 		Example: "sinfonia-osmosis sync swaps --mongo-dbname sinfonia-test",
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfgPath, err := config.ParseFlags()
+			cfgPath, err := cmd.Flags().GetString(flagConfig)
 			if err != nil {
 				return err
 			}
