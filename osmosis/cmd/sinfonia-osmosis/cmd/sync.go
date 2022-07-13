@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/angelorc/sinfonia-go/config"
 	"github.com/angelorc/sinfonia-go/mongo/db"
 	"github.com/angelorc/sinfonia-go/mongo/model"
 	"github.com/angelorc/sinfonia-go/osmosis/chain"
@@ -37,7 +38,12 @@ func GetSyncPoolCmd() *cobra.Command {
 		Example: "sinfonia-osmosis sync pools --mongo-dbname sinfonia-test",
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			mongoURI, mongoDBName, mongoRetryWrites, err := parseMongoFlags(cmd)
+			cfgPath, err := config.ParseFlags()
+			if err != nil {
+				return err
+			}
+
+			cfg, err := config.NewConfig(cfgPath)
 			if err != nil {
 				return err
 			}
@@ -47,14 +53,14 @@ func GetSyncPoolCmd() *cobra.Command {
 			 */
 			defaultDB := db.Database{
 				DataBaseRefName: "default",
-				URL:             mongoURI,
-				DataBaseName:    mongoDBName,
-				RetryWrites:     strconv.FormatBool(mongoRetryWrites),
+				URL:             cfg.Mongo.Uri,
+				DataBaseName:    cfg.Mongo.DbName,
+				RetryWrites:     strconv.FormatBool(cfg.Mongo.Retry),
 			}
 			defaultDB.Init()
 			defer defaultDB.Disconnect()
 
-			client, err := chain.NewClient(chain.GetOsmosisConfig())
+			client, err := chain.NewClient(&cfg.Osmosis)
 			if err != nil {
 				return fmt.Errorf("failed to get RPC endpoints on chain %s. err: %v", "osmosis", err)
 			}
@@ -67,7 +73,7 @@ func GetSyncPoolCmd() *cobra.Command {
 		},
 	}
 
-	addMongoFlags(cmd)
+	addConfigFlag(cmd)
 
 	return cmd
 }
@@ -79,7 +85,12 @@ func GetSyncSwapCmd() *cobra.Command {
 		Example: "sinfonia-osmosis sync swaps --mongo-dbname sinfonia-test",
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			mongoURI, mongoDBName, mongoRetryWrites, err := parseMongoFlags(cmd)
+			cfgPath, err := config.ParseFlags()
+			if err != nil {
+				return err
+			}
+
+			cfg, err := config.NewConfig(cfgPath)
 			if err != nil {
 				return err
 			}
@@ -89,9 +100,9 @@ func GetSyncSwapCmd() *cobra.Command {
 			 */
 			defaultDB := db.Database{
 				DataBaseRefName: "default",
-				URL:             mongoURI,
-				DataBaseName:    mongoDBName,
-				RetryWrites:     strconv.FormatBool(mongoRetryWrites),
+				URL:             cfg.Mongo.Uri,
+				DataBaseName:    cfg.Mongo.DbName,
+				RetryWrites:     strconv.FormatBool(cfg.Mongo.Retry),
 			}
 			defaultDB.Init()
 			defer defaultDB.Disconnect()
@@ -104,7 +115,7 @@ func GetSyncSwapCmd() *cobra.Command {
 		},
 	}
 
-	addMongoFlags(cmd)
+	addConfigFlag(cmd)
 
 	return cmd
 }
