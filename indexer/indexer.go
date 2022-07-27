@@ -176,6 +176,7 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 			"/bitsong.fantoken.MsgSetUri",
 			"/bitsong.merkledrop.v1beta1.MsgCreate",
 			"/bitsong.merkledrop.v1beta1.MsgClaim",
+			"/osmosis.gamm.poolmodels.balancer.v1beta1.MsgCreateBalancerPool",
 			"/osmosis.gamm.v1beta1.MsgJoinPool",
 			"/osmosis.gamm.v1beta1.MsgExitPool",
 			"/osmosis.gamm.v1beta1.MsgSwapExactAmountIn",
