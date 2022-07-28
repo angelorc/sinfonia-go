@@ -1,0 +1,130 @@
+package repository
+
+import (
+	"context"
+	"fmt"
+	"github.com/angelorc/sinfonia-go/mongo/db"
+	"github.com/angelorc/sinfonia-go/mongo/modelv2"
+	"github.com/angelorc/sinfonia-go/mongo/types"
+	"github.com/angelorc/sinfonia-go/utility"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"time"
+)
+
+const (
+	swapCollectionName = "swaps"
+	swapDbRefName      = "default"
+)
+
+type swapRepository struct {
+	context    context.Context
+	collection *mongo.Collection
+}
+
+type SwapRepository interface {
+	Count(filter *types.SwapFilter) (int64, error)
+	Find(filter *types.SwapFilter, pagination *types.PaginationReq) ([]*modelv2.Swap, error)
+	FindOne(filter *types.SwapFilter) *modelv2.Swap
+	EnsureIndexes() (string, error)
+
+	FindByID(id primitive.ObjectID) *modelv2.Swap
+	FindByHeight(height int64) *modelv2.Swap
+
+	Create(data *types.SwapCreateReq) (*primitive.ObjectID, error)
+}
+
+func NewSwapRepository() SwapRepository {
+	coll := db.GetCollection(swapCollectionName, swapDbRefName)
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	//defer cancel()
+
+	return &swapRepository{context: ctx, collection: coll}
+}
+
+func (e *swapRepository) FindOne(filter *types.SwapFilter) *modelv2.Swap {
+	var swap modelv2.Swap
+	e.collection.FindOne(e.context, &filter).Decode(&swap)
+
+	return &swap
+}
+
+func (e *swapRepository) FindByID(id primitive.ObjectID) *modelv2.Swap {
+	return e.FindOne(&types.SwapFilter{Id: &id})
+}
+
+func (e *swapRepository) FindByHeight(height int64) *modelv2.Swap {
+	return e.FindOne(&types.SwapFilter{Height: &height})
+}
+
+func (e *swapRepository) Find(filter *types.SwapFilter, pagination *types.PaginationReq) ([]*modelv2.Swap, error) {
+	var swaps []*modelv2.Swap
+
+	orderByKey := "height"
+	orderByValue := -1
+
+	options := options.Find()
+	if pagination.Limit != nil {
+		options.SetLimit(*pagination.Limit)
+	}
+	if pagination.Skip != nil {
+		options.SetSkip(*pagination.Skip)
+	}
+	if pagination.OrderBy != nil {
+		orderByKey, orderByValue = utility.GetOrderByKeyAndValue(*pagination.OrderBy)
+	}
+	options.SetSort(map[string]int{orderByKey: orderByValue})
+
+	var queryFilter interface{}
+	if filter != nil {
+		queryFilter = filter
+	}
+
+	cursor, err := e.collection.Find(e.context, &queryFilter, options)
+	if err != nil {
+		return swaps, err
+	}
+	err = cursor.All(e.context, &swaps)
+	if err != nil {
+		return swaps, err
+	}
+
+	return swaps, nil
+}
+
+func (e *swapRepository) Count(filter *types.SwapFilter) (int64, error) {
+	return e.collection.CountDocuments(e.context, &filter)
+}
+
+func (e *swapRepository) Create(data *types.SwapCreateReq) (*primitive.ObjectID, error) {
+	data.ID = primitive.NewObjectID()
+
+	if err := data.Validate(); err != nil {
+		return &primitive.ObjectID{}, err
+	}
+
+	res, err := e.collection.InsertOne(e.context, &data)
+	if err != nil {
+		return &primitive.ObjectID{}, err
+	}
+
+	insertedID, ok := res.InsertedID.(primitive.ObjectID)
+	if !ok {
+		return &primitive.ObjectID{}, fmt.Errorf("server error")
+	}
+
+	return &insertedID, nil
+}
+
+func (e *swapRepository) EnsureIndexes() (string, error) {
+	index := mongo.IndexModel{
+		Keys: bson.D{
+			{"height", -1},
+		},
+		Options: options.Index().SetUnique(false),
+	}
+
+	return e.collection.Indexes().CreateOne(e.context, index)
+}

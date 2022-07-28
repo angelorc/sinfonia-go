@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"github.com/angelorc/sinfonia-go/mongo/repository"
 	types2 "github.com/angelorc/sinfonia-go/mongo/types"
+	"golang.org/x/exp/slices"
 	"log"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -202,13 +204,13 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 		hashStr := hex.EncodeToString(tx.Hash())
 
 		data := &model.TransactionCreate{
-			ID:        &txID,
-			ChainID:   &chainID,
-			Height:    height,
-			BlockID:   &blockID,
-			Hash:      &hashStr,
-			Code:      sdkTxRes.Code,
-			Logs:      ConvertABCIMessageLogs(sdkTxRes.Logs),
+			ID:      &txID,
+			ChainID: &chainID,
+			Height:  height,
+			BlockID: &blockID,
+			Hash:    &hashStr,
+			Code:    sdkTxRes.Code,
+			//Logs:      ConvertABCIMessageLogs(sdkTxRes.Logs),
 			Fee:       ConvertCoins(txTx.GetFee()),
 			GasUsed:   &sdkTxRes.GasUsed,
 			GasWanted: &sdkTxRes.GasWanted,
@@ -220,13 +222,84 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 			log.Fatalf("[Height %d] {%d/%d txs} - Failed to write tx to db. Err: %s", height, index+1, len(txs), err.Error())
 		}
 
+		// save events
+		abciLogs := ConvertABCIMessageLogs(sdkTxRes.Logs)
+
+		allowedEvtTypes := []string{
+			"token_swapped",
+			//"pool_created",
+		}
+
+		for _, abciLog := range abciLogs {
+			for _, evt := range abciLog.Events {
+				ok := slices.Contains(allowedEvtTypes, evt.Type)
+				if !ok {
+					continue
+				}
+
+				// TODO: add switch
+				if evt.Type == "token_swapped" {
+					swapCreate := &types2.SwapCreateReq{
+						ChainID: chainID,
+						Height:  height,
+						TxHash:  hashStr,
+						Fee:     "", // TODO: add fee
+						Time:    time,
+					}
+
+					for _, abciAttr := range evt.Attributes {
+						switch abciAttr.Key {
+						case "sender":
+							swapCreate.Account = abciAttr.Value
+						case "pool_id":
+							poolID, _ := strconv.ParseInt(abciAttr.Value, 10, 64)
+							swapCreate.PoolId = poolID
+						case "tokens_in":
+							token_in, _ := sdk.ParseCoinNormalized(abciAttr.Value)
+							swapCreate.TokensInAmt = token_in.Amount.String()
+							swapCreate.TokensInDenom = token_in.Denom
+						case "tokens_out":
+							token_out, _ := sdk.ParseCoinNormalized(abciAttr.Value)
+							swapCreate.TokensOutAmt = token_out.Amount.String()
+							swapCreate.TokensOutDenom = token_out.Denom
+						}
+					}
+
+					swapRepo := repository.NewSwapRepository()
+					_, err := swapRepo.Create(swapCreate)
+
+					if err != nil {
+						log.Fatalf("[Height %d] - Failed to write swap to db. Err: %s", height, err.Error())
+					}
+
+					// save attributes
+					/*attrRepo := repository.NewAttributeRepository()
+
+					for _, abciAttr := range evt.Attributes {
+						_, err = attrRepo.Create(&types2.AttributeCreateReq{
+							EventID:      *eventID,
+							Key:          abciAttr.Key,
+							CompositeKey: fmt.Sprintf("%s.%s", evt.Type, abciAttr.Key),
+							Value:        abciAttr.Value,
+						})
+					}*/
+				}
+
+				if err != nil {
+					log.Fatalf("[Height %d] - Failed to write event to db. Err: %s", height, err.Error())
+				}
+
+				log.Printf("Event added: %s", evt.Type)
+			}
+		}
+
 		log.Printf("[Height %d] {%d/%d txs} - Successfuly wrote tx to db with %d msgs.", height, index+1, len(txs), len(txTx.GetMsgs()))
 
-		for msgIndex, msg := range txTx.GetMsgs() {
+		/*for msgIndex, msg := range txTx.GetMsgs() {
 			i.HandleMsg(txID, chainID, msg, msgIndex, height, time)
 		}
 
-		i.HandleLogs(sdkTxRes.Logs, txTx.GetMsgs(), height, tx.Hash(), time)
+		i.HandleLogs(sdkTxRes.Logs, txTx.GetMsgs(), height, tx.Hash(), time)*/
 	}
 }
 
