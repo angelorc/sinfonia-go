@@ -179,7 +179,9 @@ func syncSwaps() error {
 					_, err := swapRepo.Create(swapCreate)
 
 					if err != nil {
-						log.Fatalf("Failed to write swap to db. Err: %s", err.Error())
+						if !strings.Contains(err.Error(), "E11000 duplicate key error") {
+							log.Fatalf("Failed to write swap to db. Err: %s", err.Error())
+						}
 					}
 
 				}
