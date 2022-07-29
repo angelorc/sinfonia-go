@@ -105,7 +105,7 @@ func syncSwaps() error {
 	// get last available height on db
 	lastBlock := model.GetLastHeight("osmosis-1")
 	// TODO: get first available block
-	defaultBlock := 5112890
+	defaultBlock := 5112889
 
 	// get last block synced from account
 	sync := new(model.Sync)
@@ -126,9 +126,9 @@ func syncSwaps() error {
 	poolRepo := repository.NewPoolRepository()
 
 	limit := 50
-	batches := int(math.Ceil(float64(lastBlock-sync.Swaps) / float64(limit)))
-	fromBlock := sync.Swaps
+	fromBlock := sync.Swaps + 1
 	toBlock := fromBlock + int64(limit)
+	batches := int(math.Ceil(float64(lastBlock-fromBlock) / float64(limit)))
 
 	log.Printf("Scanning blocks from %d to %d, batches %d, first end block %d\n", fromBlock, lastBlock, batches, toBlock)
 
@@ -345,7 +345,7 @@ func syncPools(client *chain.Client) error {
 	// get last available height on db
 	lastBlock := model.GetLastHeight("osmosis-1")
 	// TODO: get first available block
-	defaultBlock := 5112890
+	defaultBlock := 5112889
 
 	// get last block synced from account
 	sync := new(model.Sync)
@@ -364,9 +364,9 @@ func syncPools(client *chain.Client) error {
 	poolRepo := repository.NewPoolRepository()
 
 	limit := 50
-	batches := int(math.Ceil(float64(lastBlock-sync.Pools) / float64(limit)))
-	fromBlock := sync.Pools
+	fromBlock := sync.Pools + 1
 	toBlock := fromBlock + int64(limit)
+	batches := int(math.Ceil(float64(lastBlock-fromBlock) / float64(limit)))
 
 	log.Printf("Scanning blocks from %d to %d, batches %d, first end block %d\n", fromBlock, lastBlock, batches, toBlock)
 
