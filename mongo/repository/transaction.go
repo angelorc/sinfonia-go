@@ -39,7 +39,7 @@ type TransactionRepository interface {
 
 func NewTransactionRepository() TransactionRepository {
 	coll := db.GetCollection(transactionCollectionName, transactionDbRefName)
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
 	//defer cancel()
 
 	return &transactionRepository{context: ctx, collection: coll}
