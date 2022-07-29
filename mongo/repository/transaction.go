@@ -195,11 +195,11 @@ func (e *transactionRepository) FindEventsByType(evtType string, fromBlock, toBl
 		},
 	}
 
-	opts := options.Aggregate()
-	opts.SetAllowDiskUse(true)
+	// opts := options.Aggregate()
+	// opts.SetAllowDiskUse(true)
 	// opts.SetBatchSize(100)
 
-	cursor, err := e.collection.Aggregate(e.context, pipeline, opts)
+	cursor, err := e.collection.Aggregate(e.context, pipeline)
 	if err != nil {
 		return txEvents, err
 	}
