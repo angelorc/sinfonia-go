@@ -158,17 +158,17 @@ func (e *transactionRepository) FindEventsByType(evtType string, fromBlock, toBl
 
 	pipeline := []bson.M{
 		{
-			"$match": bson.M{
-				"chain_id": "osmosis-1",
-				"height": bson.M{
-					"$gt":  fromBlock,
-					"$lte": toBlock,
-				},
+			"$sort": bson.M{
+				"height": 1,
 			},
 		},
 		{
-			"$sort": bson.M{
-				"height": 1,
+			"$match": bson.M{
+				"chain_id": "osmosis-1",
+				"height": bson.M{
+					"$gte": fromBlock,
+					"$lte": toBlock,
+				},
 			},
 		},
 		{
@@ -197,7 +197,7 @@ func (e *transactionRepository) FindEventsByType(evtType string, fromBlock, toBl
 
 	opts := options.Aggregate()
 	opts.SetAllowDiskUse(true)
-	opts.SetBatchSize(100)
+	// opts.SetBatchSize(100)
 
 	cursor, err := e.collection.Aggregate(e.context, pipeline, opts)
 	if err != nil {

@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -103,6 +104,8 @@ func convertCoinToCoinModel(coin sdk.Coin) modelv2.Coin {
 func syncSwaps() error {
 	// get last available height on db
 	lastBlock := model.GetLastHeight()
+	// TODO: get first available block
+	defaultBlock := 5112890
 
 	// get last block synced from account
 	sync := new(model.Sync)
@@ -110,58 +113,83 @@ func syncSwaps() error {
 
 	if sync.ID.IsZero() {
 		sync.ID = primitive.NewObjectID()
-		sync.Swaps = int64(0)
+		sync.Swaps = int64(defaultBlock)
+	}
+
+	if sync.Swaps < int64(defaultBlock) {
+		sync.Swaps = int64(defaultBlock)
 	}
 
 	txRepo := repository.NewTransactionRepository()
 	swapRepo := repository.NewSwapRepository()
+	swapRepo.EnsureIndexes()
 	poolRepo := repository.NewPoolRepository()
 
-	txs, err := txRepo.FindEventsByType("token_swapped", sync.Swaps, lastBlock)
+	limit := 50
+	batches := int(math.Ceil(float64(lastBlock-sync.Swaps) / float64(limit)))
+	fromBlock := sync.Swaps
+	toBlock := fromBlock + int64(limit)
 
-	if err != nil {
-		log.Fatalf("Failed to find events. Err: %s", err.Error())
-	}
+	log.Printf("Scanning blocks from %d to %d, batches %d, first end block %d\n", fromBlock, lastBlock, batches, toBlock)
 
-	for _, tx := range txs {
-		for _, evt := range tx.Events {
-			groupedAttrs := chunkSlice(evt.Attributes, 5)
+	for i := 1; i <= batches; i++ {
+		if fromBlock > toBlock {
+			continue
+		}
 
-			for _, attrs := range groupedAttrs {
-				swapCreate := &modelv2.SwapCreateReq{
-					ChainID: tx.ChainID,
-					Height:  tx.Height,
-					TxHash:  tx.Hash,
-					Fee:     modelv2.Coin{},
-					Time:    tx.Time,
-				}
+		txs, err := txRepo.FindEventsByType("token_swapped", fromBlock, toBlock)
+		log.Printf("Scanning blocks from %d to %d, %d txs founds, batch %d/%d\n", fromBlock, toBlock, len(txs), i, batches)
 
-				for _, attr := range attrs {
-					switch attr.Key {
-					case "sender":
-						swapCreate.Account = attr.Value
-					case "pool_id":
-						poolID, _ := strconv.ParseInt(attr.Value, 10, 64)
-						swapCreate.PoolId = poolID
-					case "tokens_in":
-						tokenIn, _ := sdk.ParseCoinNormalized(attr.Value)
-						swapCreate.TokenIn = convertCoinToCoinModel(tokenIn)
-					case "tokens_out":
-						tokenOut, _ := sdk.ParseCoinNormalized(attr.Value)
-						swapCreate.TokenOut = convertCoinToCoinModel(tokenOut)
+		if err != nil {
+			log.Fatalf("Failed to find events. Err: %s", err.Error())
+		}
+
+		for _, tx := range txs {
+			for _, evt := range tx.Events {
+				groupedAttrs := chunkSlice(evt.Attributes, 5)
+
+				for _, attrs := range groupedAttrs {
+					swapCreate := &modelv2.SwapCreateReq{
+						ChainID: tx.ChainID,
+						Height:  tx.Height,
+						TxHash:  tx.Hash,
+						Fee:     modelv2.Coin{},
+						Time:    tx.Time,
 					}
+
+					for _, attr := range attrs {
+						switch attr.Key {
+						case "sender":
+							swapCreate.Account = attr.Value
+						case "pool_id":
+							poolID, _ := strconv.ParseInt(attr.Value, 10, 64)
+							swapCreate.PoolId = poolID
+						case "tokens_in":
+							tokenIn, _ := sdk.ParseCoinNormalized(attr.Value)
+							swapCreate.TokenIn = convertCoinToCoinModel(tokenIn)
+						case "tokens_out":
+							tokenOut, _ := sdk.ParseCoinNormalized(attr.Value)
+							swapCreate.TokenOut = convertCoinToCoinModel(tokenOut)
+						}
+					}
+
+					pool := poolRepo.FindByPoolID(uint64(swapCreate.PoolId))
+					swapCreate.Fee = calcFee(swapCreate.TokenIn.String(), pool.SwapFee)
+
+					_, err := swapRepo.Create(swapCreate)
+
+					if err != nil {
+						log.Fatalf("Failed to write swap to db. Err: %s", err.Error())
+					}
+
 				}
-
-				pool := poolRepo.FindByPoolID(uint64(swapCreate.PoolId))
-				swapCreate.Fee = calcFee(swapCreate.TokenIn.String(), pool.SwapFee)
-
-				_, err := swapRepo.Create(swapCreate)
-
-				if err != nil {
-					log.Fatalf("Failed to write swap to db. Err: %s", err.Error())
-				}
-
 			}
+		}
+
+		fromBlock = toBlock + 1
+		toBlock = fromBlock + int64(limit)
+		if toBlock > lastBlock {
+			toBlock = lastBlock
 		}
 	}
 
@@ -316,6 +344,8 @@ func GetSyncOldPoolCmd() *cobra.Command {
 func syncPools(client *chain.Client) error {
 	// get last available height on db
 	lastBlock := model.GetLastHeight()
+	// TODO: get first available block
+	defaultBlock := 5112890
 
 	// get last block synced from account
 	sync := new(model.Sync)
@@ -323,56 +353,82 @@ func syncPools(client *chain.Client) error {
 
 	if sync.ID.IsZero() {
 		sync.ID = primitive.NewObjectID()
-		sync.Pools = int64(0)
+		sync.Pools = int64(defaultBlock)
+	}
+
+	if sync.Pools < int64(defaultBlock) {
+		sync.Pools = int64(defaultBlock)
 	}
 
 	txRepo := repository.NewTransactionRepository()
 	poolRepo := repository.NewPoolRepository()
 
-	txs, err := txRepo.FindEventsByType("pool_created", sync.Swaps, lastBlock)
+	limit := 50
+	batches := int(math.Ceil(float64(lastBlock-sync.Pools) / float64(limit)))
+	fromBlock := sync.Pools
+	toBlock := fromBlock + int64(limit)
 
-	if err != nil {
-		log.Fatalf("Failed to find events. Err: %s", err.Error())
-	}
+	log.Printf("Scanning blocks from %d to %d, batches %d, first end block %d\n", fromBlock, lastBlock, batches, toBlock)
 
-	for _, tx := range txs {
-		for _, evt := range tx.Events {
-			poolID, err := strconv.ParseUint(evt.Attributes[0].Value, 0, 64)
-			if err != nil {
-				return fmt.Errorf("error while parsing poolID, err: %s", err.Error())
+	for i := 1; i <= batches; i++ {
+		if fromBlock > toBlock {
+			continue
+		}
+
+		txs, err := txRepo.FindEventsByType("pool_created", fromBlock, toBlock)
+		log.Printf("Scanning blocks from %d to %d, %d txs founds, batch %d/%d\n", fromBlock, toBlock, len(txs), i, batches)
+
+		if err != nil {
+			log.Fatalf("Failed to find events. Err: %s", err.Error())
+		}
+
+		for _, tx := range txs {
+			log.Printf("found %d events", len(tx.Events))
+
+			for _, evt := range tx.Events {
+				poolID, err := strconv.ParseUint(evt.Attributes[0].Value, 0, 64)
+				if err != nil {
+					return fmt.Errorf("error while parsing poolID, err: %s", err.Error())
+				}
+
+				poolRes, err := client.QueryPoolByID(poolID)
+				if err != nil {
+					return fmt.Errorf("error while fetching poolID, err: %s", err.Error())
+				}
+
+				var poolI gammtypes.PoolI
+				err = client.Codec.Marshaler.UnpackAny(poolRes.GetPool(), &poolI)
+				if err != nil {
+					log.Fatalf("error while decoding the new pool")
+				}
+
+				pool, ok := poolI.(*balancer.Pool)
+				if !ok {
+					log.Fatalf("error while decoding the new pool")
+				}
+
+				_, err = poolRepo.Create(&modelv2.PoolCreateReq{
+					ChainID:    tx.ChainID,
+					Height:     tx.Height,
+					TxHash:     tx.Hash,
+					PoolID:     poolID,
+					PoolAssets: convertPoolAssetsToModel(pool.GetAllPoolAssets()),
+					SwapFee:    pool.GetSwapFee(sdk.Context{}).String(),
+					ExitFee:    pool.GetExitFee(sdk.Context{}).String(),
+					Time:       tx.Time,
+				})
+
+				if err != nil {
+					log.Fatalf("Failed to write swap to db. Err: %s", err.Error())
+				}
+
 			}
+		}
 
-			poolRes, err := client.QueryPoolByID(poolID)
-			if err != nil {
-				return fmt.Errorf("error while fetching poolID, err: %s", err.Error())
-			}
-
-			var poolI gammtypes.PoolI
-			err = client.Codec.Marshaler.UnpackAny(poolRes.GetPool(), &poolI)
-			if err != nil {
-				log.Fatalf("error while decoding the new pool")
-			}
-
-			pool, ok := poolI.(*balancer.Pool)
-			if !ok {
-				log.Fatalf("error while decoding the new pool")
-			}
-
-			_, err = poolRepo.Create(&modelv2.PoolCreateReq{
-				ChainID:    tx.ChainID,
-				Height:     tx.Height,
-				TxHash:     tx.Hash,
-				PoolID:     poolID,
-				PoolAssets: convertPoolAssetsToModel(pool.GetAllPoolAssets()),
-				SwapFee:    pool.GetSwapFee(sdk.Context{}).String(),
-				ExitFee:    pool.GetExitFee(sdk.Context{}).String(),
-				Time:       tx.Time,
-			})
-
-			if err != nil {
-				log.Fatalf("Failed to write swap to db. Err: %s", err.Error())
-			}
-
+		fromBlock = toBlock + 1
+		toBlock = fromBlock + int64(limit)
+		if toBlock > lastBlock {
+			toBlock = lastBlock
 		}
 	}
 

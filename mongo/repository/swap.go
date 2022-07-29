@@ -126,5 +126,16 @@ func (e *swapRepository) EnsureIndexes() (string, error) {
 		Options: options.Index().SetUnique(false),
 	}
 
+	e.collection.Indexes().CreateOne(e.context, index)
+
+	index = mongo.IndexModel{
+		Keys: bson.D{
+			{"tx_hash", 1},
+			{"pool_id", 1},
+			{"account", 1},
+		},
+		Options: options.Index().SetUnique(true),
+	}
+
 	return e.collection.Indexes().CreateOne(e.context, index)
 }
