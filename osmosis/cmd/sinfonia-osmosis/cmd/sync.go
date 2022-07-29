@@ -343,7 +343,7 @@ func GetSyncOldPoolCmd() *cobra.Command {
 
 func syncPools(client *chain.Client) error {
 	// get last available height on db
-	lastBlock := model.GetLastHeight()
+	lastBlock := model.GetLastHeight("osmosis-1")
 	// TODO: get first available block
 	defaultBlock := 5112890
 

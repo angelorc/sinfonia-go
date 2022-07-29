@@ -127,13 +127,13 @@ func (b *Block) Count(filter *BlockWhere) (int, error) {
 
 	return int(count), nil
 }
-func GetLastHeight() int64 {
+func GetLastHeight(chainID string) int64 {
 	collection := db.GetCollection(DB_COLLECTION_NAME__BLOCK, DB_REF_NAME__BLOCK)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	block := new(Block)
-	filter := &BlockWhere{}
+	filter := &BlockWhere{ChainID: &chainID}
 	opts := options.FindOne().SetSort(bson.M{"height": -1})
 
 	collection.FindOne(ctx, filter, opts).Decode(&block)
