@@ -169,18 +169,6 @@ func (e *transactionRepository) FindEventsByType(evtType string, fromBlock, toBl
 					"$gte": fromBlock,
 					"$lte": toBlock,
 				},
-			},
-		},
-		{
-			"$lookup": bson.M{
-				"from":         "events",
-				"localField":   "_id",
-				"foreignField": "tx_id",
-				"as":           "events",
-			},
-		},
-		{
-			"$match": bson.M{
 				"events.type": evtType,
 			},
 		},
