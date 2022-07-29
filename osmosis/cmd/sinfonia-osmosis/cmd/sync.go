@@ -103,7 +103,7 @@ func convertCoinToCoinModel(coin sdk.Coin) modelv2.Coin {
 
 func syncSwaps() error {
 	// get last available height on db
-	lastBlock := model.GetLastHeight()
+	lastBlock := model.GetLastHeight("osmosis-1")
 	// TODO: get first available block
 	defaultBlock := 5112890
 
