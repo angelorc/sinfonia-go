@@ -202,28 +202,6 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 			continue
 		}*/
 
-		hashStr := hex.EncodeToString(tx.Hash())
-
-		fee := ConvertCoins(txTx.GetFee())
-		txRepo := repository.NewTransactionRepository()
-
-		_, err = txRepo.Create(&types2.TransactionCreateReq{
-			ChainID:   chainID,
-			Height:    height,
-			Hash:      hashStr,
-			Code:      int(sdkTxRes.Code),
-			Fee:       *fee,
-			GasUsed:   sdkTxRes.GasUsed,
-			GasWanted: sdkTxRes.GasWanted,
-			Time:      time,
-		})
-
-		if err != nil {
-			if !strings.Contains(err.Error(), "E11000 duplicate key error") {
-				log.Fatalf("[Height %d] - Failed to write tx to db. Err: %s", height, err.Error())
-			}
-		}
-
 		// save events
 		abciLogs := ConvertABCIMessageLogs(sdkTxRes.Logs)
 
@@ -241,6 +219,8 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 			"begin_unlock",
 		}
 
+		events := make([]modelv2.Event, 0)
+
 		for _, abciLog := range abciLogs {
 			msgIndex := abciLog.MsgIndex
 
@@ -250,18 +230,38 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 					continue
 				}
 
-				eventRepo := repository.NewEventRepository()
-				txID, _ := primitive.ObjectIDFromHex(hashStr[:24])
-				_, err := eventRepo.Create(&modelv2.EventCreateReq{
-					TxID:       txID,
+				//eventRepo := repository.NewEventRepository()
+				// txID, _ := primitive.ObjectIDFromHex(hashStr[:24])
+
+				events = append(events, modelv2.Event{
+					// TxID:       txID,
 					MsgIndex:   msgIndex,
 					Type:       evt.Type,
 					Attributes: evt.Attributes,
 				})
+			}
+		}
 
-				if err != nil {
-					log.Fatalf("[Height %d] - Failed to write event to db. Err: %s", height, err.Error())
-				}
+		hashStr := hex.EncodeToString(tx.Hash())
+
+		fee := ConvertCoins(txTx.GetFee())
+		txRepo := repository.NewTransactionRepository()
+
+		_, err = txRepo.Create(&modelv2.TransactionCreateReq{
+			ChainID:   chainID,
+			Height:    height,
+			Hash:      hashStr,
+			Code:      int(sdkTxRes.Code),
+			Fee:       *fee,
+			Events:    events,
+			GasUsed:   sdkTxRes.GasUsed,
+			GasWanted: sdkTxRes.GasWanted,
+			Time:      time,
+		})
+
+		if err != nil {
+			if !strings.Contains(err.Error(), "E11000 duplicate key error") {
+				log.Fatalf("[Height %d] - Failed to write tx to db. Err: %s", height, err.Error())
 			}
 		}
 

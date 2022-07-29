@@ -25,16 +25,16 @@ type transactionRepository struct {
 }
 
 type TransactionRepository interface {
-	Count(filter *types.TransactionFilter) (int64, error)
-	Find(filter *types.TransactionFilter, pagination *types.PaginationReq) ([]*modelv2.Transaction, error)
-	FindOne(filter *types.TransactionFilter) *modelv2.Transaction
+	Count(filter *modelv2.TransactionFilter) (int64, error)
+	Find(filter *modelv2.TransactionFilter, pagination *types.PaginationReq) ([]*modelv2.Transaction, error)
+	FindOne(filter *modelv2.TransactionFilter) *modelv2.Transaction
 	EnsureIndexes() (string, error)
 
 	FindByID(id primitive.ObjectID) *modelv2.Transaction
 	FindByHash(hash string) *modelv2.Transaction
 	FindEventsByType(evtType string, fromBlock, toBlock int64) ([]*modelv2.TransactionEvents, error)
 
-	Create(data *types.TransactionCreateReq) (*modelv2.Transaction, error)
+	Create(data *modelv2.TransactionCreateReq) (*modelv2.Transaction, error)
 }
 
 func NewTransactionRepository() TransactionRepository {
@@ -45,7 +45,7 @@ func NewTransactionRepository() TransactionRepository {
 	return &transactionRepository{context: ctx, collection: coll}
 }
 
-func (b *transactionRepository) FindOne(filter *types.TransactionFilter) *modelv2.Transaction {
+func (b *transactionRepository) FindOne(filter *modelv2.TransactionFilter) *modelv2.Transaction {
 	var transaction modelv2.Transaction
 	b.collection.FindOne(b.context, &filter).Decode(&transaction)
 
@@ -53,14 +53,14 @@ func (b *transactionRepository) FindOne(filter *types.TransactionFilter) *modelv
 }
 
 func (b *transactionRepository) FindByID(id primitive.ObjectID) *modelv2.Transaction {
-	return b.FindOne(&types.TransactionFilter{Id: &id})
+	return b.FindOne(&modelv2.TransactionFilter{Id: &id})
 }
 
 func (b *transactionRepository) FindByHash(hash string) *modelv2.Transaction {
-	return b.FindOne(&types.TransactionFilter{Hash: &hash})
+	return b.FindOne(&modelv2.TransactionFilter{Hash: &hash})
 }
 
-func (b *transactionRepository) Find(filter *types.TransactionFilter, pagination *types.PaginationReq) ([]*modelv2.Transaction, error) {
+func (b *transactionRepository) Find(filter *modelv2.TransactionFilter, pagination *types.PaginationReq) ([]*modelv2.Transaction, error) {
 	var transactions []*modelv2.Transaction
 
 	orderByKey := "height"
@@ -95,11 +95,11 @@ func (b *transactionRepository) Find(filter *types.TransactionFilter, pagination
 	return transactions, nil
 }
 
-func (b *transactionRepository) Count(filter *types.TransactionFilter) (int64, error) {
+func (b *transactionRepository) Count(filter *modelv2.TransactionFilter) (int64, error) {
 	return b.collection.CountDocuments(b.context, &filter)
 }
 
-func (b *transactionRepository) Create(data *types.TransactionCreateReq) (*modelv2.Transaction, error) {
+func (b *transactionRepository) Create(data *modelv2.TransactionCreateReq) (*modelv2.Transaction, error) {
 	// create id
 	txID, err := primitive.ObjectIDFromHex(data.Hash[:24])
 	if err != nil {

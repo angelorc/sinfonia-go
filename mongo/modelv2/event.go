@@ -6,11 +6,9 @@ import (
 )
 
 type Event struct {
-	ID         primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	TxID       primitive.ObjectID `json:"tx_id" bson:"tx_id" validate:"required"`
-	MsgIndex   int                `json:"msg_index" bson:"msg_index"`
-	Type       string             `json:"type" bson:"type"`
-	Attributes []Attribute        `json:"attributes" bson:"attributes" validate:"required"`
+	MsgIndex   int         `json:"msg_index" bson:"msg_index"`
+	Type       string      `json:"type" bson:"type"`
+	Attributes []Attribute `json:"attributes" bson:"attributes" validate:"required"`
 }
 
 func (e *Event) Validate() error {

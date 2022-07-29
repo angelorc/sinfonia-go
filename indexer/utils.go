@@ -2,20 +2,19 @@ package indexer
 
 import (
 	"github.com/angelorc/sinfonia-go/mongo/modelv2"
-	"github.com/angelorc/sinfonia-go/mongo/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"golang.org/x/exp/slices"
 )
 
-func ConvertCoin(coin sdk.Coin) types.Coin {
-	return types.Coin{
+func ConvertCoin(coin sdk.Coin) modelv2.Coin {
+	return modelv2.Coin{
 		Amount: coin.Amount.String(),
 		Denom:  coin.Denom,
 	}
 }
 
-func ConvertCoins(coins sdk.Coins) *[]types.Coin {
-	newCoins := make([]types.Coin, len(coins))
+func ConvertCoins(coins sdk.Coins) *[]modelv2.Coin {
+	newCoins := make([]modelv2.Coin, len(coins))
 
 	for i, coin := range coins {
 		newCoins[i] = ConvertCoin(coin)
