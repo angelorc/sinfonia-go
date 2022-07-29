@@ -375,6 +375,7 @@ func syncPools(client *chain.Client) error {
 			continue
 		}
 
+		log.Printf("Querying blocks from %d to %d", fromBlock, toBlock)
 		txs, err := txRepo.FindEventsByType("pool_created", fromBlock, toBlock)
 		log.Printf("Scanning blocks from %d to %d, %d txs founds, batch %d/%d\n", fromBlock, toBlock, len(txs), i, batches)
 
