@@ -191,7 +191,7 @@ func EnsureAccount(acc string, firstSeen time.Time) error {
 }
 
 func SyncAccounts() error {
-	lasBlock := GetLastHeight()
+	lasBlock := GetLastHeight("osmosis-1")
 
 	// get last block synced from account
 	sync := new(Sync)
