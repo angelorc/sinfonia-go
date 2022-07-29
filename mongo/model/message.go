@@ -223,7 +223,7 @@ type TxLogs struct {
 			Events []struct {
 				Type string `bson:"type"`
 
-				Attributes []Attribute `bson:"attributes"`
+				//Attributes []Attribute `bson:"attributes"`
 			} `bson:"events"`
 		} `bson:"logs"`
 	} `bson:"tx"`

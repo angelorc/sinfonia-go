@@ -1,20 +1,7 @@
 package cmd
 
 import (
-	"fmt"
-	"github.com/angelorc/sinfonia-go/config"
-	"github.com/angelorc/sinfonia-go/mongo/db"
-	"github.com/angelorc/sinfonia-go/mongo/model"
-	"github.com/angelorc/sinfonia-go/osmosis/chain"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/osmosis-labs/osmosis/v9/x/gamm/pool-models/balancer"
-	"github.com/osmosis-labs/osmosis/v9/x/gamm/types"
 	"github.com/spf13/cobra"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"log"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func GetSyncCmd() *cobra.Command {
@@ -24,13 +11,14 @@ func GetSyncCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		GetSyncPoolCmd(),
-		GetSyncSwapCmd(),
+		//GetSyncPoolCmd(),
+		//GetSyncSwapCmd(),
 	)
 
 	return cmd
 }
 
+/*
 func GetSyncPoolCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "pools",
@@ -48,9 +36,6 @@ func GetSyncPoolCmd() *cobra.Command {
 				return err
 			}
 
-			/**
-			 * Connect to db
-			 */
 			defaultDB := db.Database{
 				DataBaseRefName: "default",
 				URL:             cfg.Mongo.Uri,
@@ -95,9 +80,6 @@ func GetSyncSwapCmd() *cobra.Command {
 				return err
 			}
 
-			/**
-			 * Connect to db
-			 */
 			defaultDB := db.Database{
 				DataBaseRefName: "default",
 				URL:             cfg.Mongo.Uri,
@@ -408,3 +390,4 @@ func convertPoolAssetsToModel(pa []balancer.PoolAsset) []model.PoolAsset {
 
 	return newPoolAssets
 }
+*/

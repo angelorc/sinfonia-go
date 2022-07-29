@@ -1,20 +1,21 @@
 package indexer
 
 import (
-	"github.com/angelorc/sinfonia-go/mongo/model"
+	"github.com/angelorc/sinfonia-go/mongo/modelv2"
+	"github.com/angelorc/sinfonia-go/mongo/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"golang.org/x/exp/slices"
 )
 
-func ConvertCoin(coin sdk.Coin) model.Coin {
-	return model.Coin{
+func ConvertCoin(coin sdk.Coin) types.Coin {
+	return types.Coin{
 		Amount: coin.Amount.String(),
 		Denom:  coin.Denom,
 	}
 }
 
-func ConvertCoins(coins sdk.Coins) *[]model.Coin {
-	newCoins := make([]model.Coin, len(coins))
+func ConvertCoins(coins sdk.Coins) *[]types.Coin {
+	newCoins := make([]types.Coin, len(coins))
 
 	for i, coin := range coins {
 		newCoins[i] = ConvertCoin(coin)
@@ -51,11 +52,11 @@ func IsAllowedTx(allowedActions []string, logs sdk.ABCIMessageLogs) bool {
 	return false
 }
 
-func ConvertABCIMessageLogs(logs sdk.ABCIMessageLogs) []model.ABCIMessageLog {
-	newLogs := make([]model.ABCIMessageLog, len(logs))
+func ConvertABCIMessageLogs(logs sdk.ABCIMessageLogs) []modelv2.ABCIMessageLog {
+	newLogs := make([]modelv2.ABCIMessageLog, len(logs))
 
 	for i, log := range logs {
-		newLogs[i] = model.ABCIMessageLog{
+		newLogs[i] = modelv2.ABCIMessageLog{
 			MsgIndex: int(log.MsgIndex),
 			Log:      log.Log,
 			Events:   ConvertStringEvents(log.Events),
@@ -65,11 +66,11 @@ func ConvertABCIMessageLogs(logs sdk.ABCIMessageLogs) []model.ABCIMessageLog {
 	return newLogs
 }
 
-func ConvertStringEvents(events sdk.StringEvents) []model.StringEvent {
-	newEvents := make([]model.StringEvent, len(events))
+func ConvertStringEvents(events sdk.StringEvents) []modelv2.StringEvent {
+	newEvents := make([]modelv2.StringEvent, len(events))
 
 	for i, evt := range events {
-		newEvents[i] = model.StringEvent{
+		newEvents[i] = modelv2.StringEvent{
 			Type:       evt.Type,
 			Attributes: ConvertAttributes(evt.Attributes),
 		}
@@ -78,11 +79,11 @@ func ConvertStringEvents(events sdk.StringEvents) []model.StringEvent {
 	return newEvents
 }
 
-func ConvertAttributes(attrs []sdk.Attribute) []model.Attribute {
-	newAttrs := make([]model.Attribute, len(attrs))
+func ConvertAttributes(attrs []sdk.Attribute) []modelv2.Attribute {
+	newAttrs := make([]modelv2.Attribute, len(attrs))
 
 	for i, attr := range attrs {
-		newAttrs[i] = model.Attribute{
+		newAttrs[i] = modelv2.Attribute{
 			Key:   attr.Key,
 			Value: attr.Value,
 		}

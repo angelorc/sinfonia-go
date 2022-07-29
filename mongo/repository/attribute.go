@@ -15,52 +15,47 @@ import (
 )
 
 const (
-	attributeCollectionName = "attributess"
-	attributeDbRefName      = "default"
+	eventCollectionName = "events"
+	eventDbRefName      = "default"
 )
 
-type attributeRepository struct {
+type eventRepository struct {
 	context    context.Context
 	collection *mongo.Collection
 }
 
-type AttributeRepository interface {
-	Count(filter *types.AttributeFilter) (int64, error)
-	Find(filter *types.AttributeFilter, pagination *types.PaginationReq) ([]*modelv2.Attribute, error)
-	FindOne(filter *types.AttributeFilter) *modelv2.Attribute
+type EventRepository interface {
+	Count(filter *modelv2.EventFilter) (int64, error)
+	Find(filter *modelv2.EventFilter, pagination *types.PaginationReq) ([]*modelv2.Event, error)
+	FindOne(filter *modelv2.EventFilter) *modelv2.Event
 	EnsureIndexes() (string, error)
 
-	FindByID(id primitive.ObjectID) *modelv2.Attribute
-	FindByKey(key string) *modelv2.Attribute
+	FindByID(id primitive.ObjectID) *modelv2.Event
 
-	Create(data *types.AttributeCreateReq) (*modelv2.Attribute, error)
+	Create(data *modelv2.EventCreateReq) (*modelv2.Event, error)
 }
 
-func NewAttributeRepository() AttributeRepository {
-	coll := db.GetCollection(attributeCollectionName, attributeDbRefName)
+func NewEventRepository() EventRepository {
+	coll := db.GetCollection(eventCollectionName, eventDbRefName)
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	//defer cancel()
 
-	return &attributeRepository{context: ctx, collection: coll}
+	return &eventRepository{context: ctx, collection: coll}
 }
 
-func (e *attributeRepository) FindOne(filter *types.AttributeFilter) *modelv2.Attribute {
-	var attribute modelv2.Attribute
-	e.collection.FindOne(e.context, &filter).Decode(&attribute)
+func (e *eventRepository) FindOne(filter *modelv2.EventFilter) *modelv2.Event {
+	var event modelv2.Event
+	e.collection.FindOne(e.context, &filter).Decode(&event)
 
-	return &attribute
+	return &event
 }
 
-func (e *attributeRepository) FindByID(id primitive.ObjectID) *modelv2.Attribute {
-	return e.FindOne(&types.AttributeFilter{Id: &id})
+func (e *eventRepository) FindByID(id primitive.ObjectID) *modelv2.Event {
+	return e.FindOne(&modelv2.EventFilter{Id: &id})
 }
 
-func (e *attributeRepository) FindByKey(key string) *modelv2.Attribute {
-	return e.FindOne(&types.AttributeFilter{Key: &key})
-}
-
-func (e *attributeRepository) Find(filter *types.AttributeFilter, pagination *types.PaginationReq) ([]*modelv2.Attribute, error) {
-	var attributes []*modelv2.Attribute
+func (e *eventRepository) Find(filter *modelv2.EventFilter, pagination *types.PaginationReq) ([]*modelv2.Event, error) {
+	var events []*modelv2.Event
 
 	orderByKey := "height"
 	orderByValue := -1
@@ -84,47 +79,65 @@ func (e *attributeRepository) Find(filter *types.AttributeFilter, pagination *ty
 
 	cursor, err := e.collection.Find(e.context, &queryFilter, options)
 	if err != nil {
-		return attributes, err
+		return events, err
 	}
-	err = cursor.All(e.context, &attributes)
+	err = cursor.All(e.context, &events)
 	if err != nil {
-		return attributes, err
+		return events, err
 	}
 
-	return attributes, nil
+	return events, nil
 }
 
-func (e *attributeRepository) Count(filter *types.AttributeFilter) (int64, error) {
+func (e *eventRepository) Count(filter *modelv2.EventFilter) (int64, error) {
 	return e.collection.CountDocuments(e.context, &filter)
 }
 
-func (e *attributeRepository) Create(data *types.AttributeCreateReq) (*modelv2.Attribute, error) {
+func (e *eventRepository) Create(data *modelv2.EventCreateReq) (*modelv2.Event, error) {
 	data.ID = primitive.NewObjectID()
 
 	if err := data.Validate(); err != nil {
-		return &modelv2.Attribute{}, err
+		return &modelv2.Event{}, err
 	}
 
 	res, err := e.collection.InsertOne(e.context, &data)
 	if err != nil {
-		return &modelv2.Attribute{}, err
+		return &modelv2.Event{}, err
 	}
 
 	insertedID, ok := res.InsertedID.(primitive.ObjectID)
 	if !ok {
-		return &modelv2.Attribute{}, fmt.Errorf("server error")
+		return &modelv2.Event{}, fmt.Errorf("server error")
 	}
 
 	return e.FindByID(insertedID), nil
 }
 
-func (e *attributeRepository) EnsureIndexes() (string, error) {
+func (e *eventRepository) EnsureIndexes() (string, error) {
 	index := mongo.IndexModel{
 		Keys: bson.D{
-			{"event_id", 1},
-			{"key", 1},
+			{"tx_id", 1},
+		},
+		Options: options.Index().SetUnique(false),
+	}
+
+	e.collection.Indexes().CreateOne(e.context, index)
+
+	index = mongo.IndexModel{
+		Keys: bson.D{
+			{"tx_id", 1},
+			{"msg_index", 1},
 		},
 		Options: options.Index().SetUnique(true),
+	}
+
+	e.collection.Indexes().CreateOne(e.context, index)
+
+	index = mongo.IndexModel{
+		Keys: bson.D{
+			{"type", 1},
+		},
+		Options: options.Index().SetUnique(false),
 	}
 
 	return e.collection.Indexes().CreateOne(e.context, index)

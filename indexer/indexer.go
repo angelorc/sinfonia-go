@@ -5,11 +5,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/angelorc/sinfonia-go/mongo/modelv2"
 	"github.com/angelorc/sinfonia-go/mongo/repository"
 	types2 "github.com/angelorc/sinfonia-go/mongo/types"
 	"golang.org/x/exp/slices"
 	"log"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -141,7 +141,9 @@ func (i *Indexer) IndexTransactions(height int64) error {
 	})
 
 	if err != nil {
-		log.Fatalf("[Height %d] - Failed to write block to db. Err: %s", height, err.Error())
+		if !strings.Contains(err.Error(), "E11000 duplicate key error") {
+			log.Fatalf("[Height %d] - Failed to write block to db. Err: %s", height, err.Error())
+		}
 	}
 
 	if i.modules.Transactions {
@@ -168,7 +170,7 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 			continue
 		}
 
-		allowedActions := []string{
+		/*allowedActions := []string{
 			"/bitsong.fantoken.MsgIssue",
 			"/bitsong.fantoken.MsgMint",
 			"/bitsong.fantoken.MsgBurn",
@@ -198,28 +200,28 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 		ok := IsAllowedTx(allowedActions, sdkTxRes.Logs)
 		if !ok {
 			continue
-		}
+		}*/
 
-		txID := model.TxHashToObjectID(tx.Hash())
 		hashStr := hex.EncodeToString(tx.Hash())
 
-		data := &model.TransactionCreate{
-			ID:      &txID,
-			ChainID: &chainID,
-			Height:  height,
-			BlockID: &blockID,
-			Hash:    &hashStr,
-			Code:    sdkTxRes.Code,
-			//Logs:      ConvertABCIMessageLogs(sdkTxRes.Logs),
-			Fee:       ConvertCoins(txTx.GetFee()),
-			GasUsed:   &sdkTxRes.GasUsed,
-			GasWanted: &sdkTxRes.GasWanted,
-			Time:      time,
-		}
+		fee := ConvertCoins(txTx.GetFee())
+		txRepo := repository.NewTransactionRepository()
 
-		err = model.InsertTx(data)
+		_, err = txRepo.Create(&types2.TransactionCreateReq{
+			ChainID:   chainID,
+			Height:    height,
+			Hash:      hashStr,
+			Code:      int(sdkTxRes.Code),
+			Fee:       *fee,
+			GasUsed:   sdkTxRes.GasUsed,
+			GasWanted: sdkTxRes.GasWanted,
+			Time:      time,
+		})
+
 		if err != nil {
-			log.Fatalf("[Height %d] {%d/%d txs} - Failed to write tx to db. Err: %s", height, index+1, len(txs), err.Error())
+			if !strings.Contains(err.Error(), "E11000 duplicate key error") {
+				log.Fatalf("[Height %d] - Failed to write tx to db. Err: %s", height, err.Error())
+			}
 		}
 
 		// save events
@@ -227,63 +229,35 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 
 		allowedEvtTypes := []string{
 			"token_swapped",
-			//"pool_created",
+			"pool_created",
+			"pool_joined",
+			"pool_exited",
+			"epoch_start",
+			"epoch_end",
+			"distribution",
+			"lock_tokens",
+			"add_tokens_to_lock",
+			"begin_unlock_all",
+			"begin_unlock",
 		}
 
 		for _, abciLog := range abciLogs {
+			msgIndex := abciLog.MsgIndex
+
 			for _, evt := range abciLog.Events {
 				ok := slices.Contains(allowedEvtTypes, evt.Type)
 				if !ok {
 					continue
 				}
 
-				// TODO: add switch
-				if evt.Type == "token_swapped" {
-					swapCreate := &types2.SwapCreateReq{
-						ChainID: chainID,
-						Height:  height,
-						TxHash:  hashStr,
-						Fee:     "", // TODO: add fee
-						Time:    time,
-					}
-
-					for _, abciAttr := range evt.Attributes {
-						switch abciAttr.Key {
-						case "sender":
-							swapCreate.Account = abciAttr.Value
-						case "pool_id":
-							poolID, _ := strconv.ParseInt(abciAttr.Value, 10, 64)
-							swapCreate.PoolId = poolID
-						case "tokens_in":
-							token_in, _ := sdk.ParseCoinNormalized(abciAttr.Value)
-							swapCreate.TokensInAmt = token_in.Amount.String()
-							swapCreate.TokensInDenom = token_in.Denom
-						case "tokens_out":
-							token_out, _ := sdk.ParseCoinNormalized(abciAttr.Value)
-							swapCreate.TokensOutAmt = token_out.Amount.String()
-							swapCreate.TokensOutDenom = token_out.Denom
-						}
-					}
-
-					swapRepo := repository.NewSwapRepository()
-					_, err := swapRepo.Create(swapCreate)
-
-					if err != nil {
-						log.Fatalf("[Height %d] - Failed to write swap to db. Err: %s", height, err.Error())
-					}
-
-					// save attributes
-					/*attrRepo := repository.NewAttributeRepository()
-
-					for _, abciAttr := range evt.Attributes {
-						_, err = attrRepo.Create(&types2.AttributeCreateReq{
-							EventID:      *eventID,
-							Key:          abciAttr.Key,
-							CompositeKey: fmt.Sprintf("%s.%s", evt.Type, abciAttr.Key),
-							Value:        abciAttr.Value,
-						})
-					}*/
-				}
+				eventRepo := repository.NewEventRepository()
+				txID, _ := primitive.ObjectIDFromHex(hashStr[:24])
+				_, err := eventRepo.Create(&modelv2.EventCreateReq{
+					TxID:       txID,
+					MsgIndex:   msgIndex,
+					Type:       evt.Type,
+					Attributes: evt.Attributes,
+				})
 
 				if err != nil {
 					log.Fatalf("[Height %d] - Failed to write event to db. Err: %s", height, err.Error())
