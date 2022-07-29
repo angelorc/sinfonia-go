@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	transactionCollectionName = "transaction"
+	transactionCollectionName = "transactions"
 	transactionDbRefName      = "default"
 )
 
@@ -119,7 +119,7 @@ func (b *transactionRepository) Create(data *types.TransactionCreateReq) (*model
 	if !ok {
 		return &modelv2.Transaction{}, fmt.Errorf("server error")
 	}
-	fmt.Println(insertedID)
+
 	return b.FindByID(insertedID), nil
 }
 

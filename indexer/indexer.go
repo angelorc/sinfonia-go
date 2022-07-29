@@ -262,8 +262,6 @@ func (i *Indexer) parseTxs(blockID primitive.ObjectID, chainID string, height in
 				if err != nil {
 					log.Fatalf("[Height %d] - Failed to write event to db. Err: %s", height, err.Error())
 				}
-
-				log.Printf("Event added: %s", evt.Type)
 			}
 		}
 
