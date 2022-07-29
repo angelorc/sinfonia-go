@@ -32,6 +32,7 @@ type TransactionRepository interface {
 
 	FindByID(id primitive.ObjectID) *modelv2.Transaction
 	FindByHash(hash string) *modelv2.Transaction
+	FindEventsByType(evtType string, fromBlock, toBlock int64) ([]*modelv2.TransactionEvents, error)
 
 	Create(data *types.TransactionCreateReq) (*modelv2.Transaction, error)
 }
@@ -135,10 +136,77 @@ func (b *transactionRepository) EnsureIndexes() (string, error) {
 
 	index = mongo.IndexModel{
 		Keys: bson.D{
+			{"id", 1},
+		},
+		Options: options.Index().SetUnique(false),
+	}
+
+	b.collection.Indexes().CreateOne(b.context, index)
+
+	index = mongo.IndexModel{
+		Keys: bson.D{
 			{"hash", 1},
 		},
 		Options: options.Index().SetUnique(true),
 	}
 
 	return b.collection.Indexes().CreateOne(b.context, index)
+}
+
+func (e *transactionRepository) FindEventsByType(evtType string, fromBlock, toBlock int64) ([]*modelv2.TransactionEvents, error) {
+	var txEvents []*modelv2.TransactionEvents
+
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{
+				"chain_id": "osmosis-1",
+				"height": bson.M{
+					"$gt":  fromBlock,
+					"$lte": toBlock,
+				},
+			},
+		},
+		{
+			"$sort": bson.M{
+				"height": 1,
+			},
+		},
+		{
+			"$lookup": bson.M{
+				"from":         "events",
+				"localField":   "_id",
+				"foreignField": "tx_id",
+				"as":           "events",
+			},
+		},
+		{
+			"$match": bson.M{
+				"events.type": evtType,
+			},
+		},
+		{
+			"$project": bson.M{
+				"chain_id": 1,
+				"height":   1,
+				"hash":     1,
+				"events":   1,
+				"time":     1,
+			},
+		},
+	}
+
+	opts := options.Aggregate()
+	opts.SetAllowDiskUse(true)
+	opts.SetBatchSize(100)
+
+	cursor, err := e.collection.Aggregate(e.context, pipeline, opts)
+	if err != nil {
+		return txEvents, err
+	}
+	err = cursor.All(e.context, &txEvents)
+	if err != nil {
+		return txEvents, err
+	}
+
+	return txEvents, nil
 }

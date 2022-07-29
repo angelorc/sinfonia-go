@@ -23,3 +23,12 @@ type Transaction struct {
 func (b *Transaction) Validate() error {
 	return utility.ValidateStruct(&b)
 }
+
+type TransactionEvents struct {
+	ID      primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	ChainID string             `json:"chain_id" bson:"chain_id"`
+	Height  int64              `json:"height" bson:"height"`
+	Hash    string             `json:"hash" bson:"hash"`
+	Time    time.Time          `json:"time" bson:"time"`
+	Events  []Event            `json:"events" bson:"events"`
+}

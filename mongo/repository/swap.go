@@ -25,15 +25,15 @@ type swapRepository struct {
 }
 
 type SwapRepository interface {
-	Count(filter *types.SwapFilter) (int64, error)
-	Find(filter *types.SwapFilter, pagination *types.PaginationReq) ([]*modelv2.Swap, error)
-	FindOne(filter *types.SwapFilter) *modelv2.Swap
+	Count(filter *modelv2.SwapFilter) (int64, error)
+	Find(filter *modelv2.SwapFilter, pagination *types.PaginationReq) ([]*modelv2.Swap, error)
+	FindOne(filter *modelv2.SwapFilter) *modelv2.Swap
 	EnsureIndexes() (string, error)
 
 	FindByID(id primitive.ObjectID) *modelv2.Swap
 	FindByHeight(height int64) *modelv2.Swap
 
-	Create(data *types.SwapCreateReq) (*primitive.ObjectID, error)
+	Create(data *modelv2.SwapCreateReq) (*primitive.ObjectID, error)
 }
 
 func NewSwapRepository() SwapRepository {
@@ -44,7 +44,7 @@ func NewSwapRepository() SwapRepository {
 	return &swapRepository{context: ctx, collection: coll}
 }
 
-func (e *swapRepository) FindOne(filter *types.SwapFilter) *modelv2.Swap {
+func (e *swapRepository) FindOne(filter *modelv2.SwapFilter) *modelv2.Swap {
 	var swap modelv2.Swap
 	e.collection.FindOne(e.context, &filter).Decode(&swap)
 
@@ -52,14 +52,14 @@ func (e *swapRepository) FindOne(filter *types.SwapFilter) *modelv2.Swap {
 }
 
 func (e *swapRepository) FindByID(id primitive.ObjectID) *modelv2.Swap {
-	return e.FindOne(&types.SwapFilter{Id: &id})
+	return e.FindOne(&modelv2.SwapFilter{Id: &id})
 }
 
 func (e *swapRepository) FindByHeight(height int64) *modelv2.Swap {
-	return e.FindOne(&types.SwapFilter{Height: &height})
+	return e.FindOne(&modelv2.SwapFilter{Height: &height})
 }
 
-func (e *swapRepository) Find(filter *types.SwapFilter, pagination *types.PaginationReq) ([]*modelv2.Swap, error) {
+func (e *swapRepository) Find(filter *modelv2.SwapFilter, pagination *types.PaginationReq) ([]*modelv2.Swap, error) {
 	var swaps []*modelv2.Swap
 
 	orderByKey := "height"
@@ -94,11 +94,11 @@ func (e *swapRepository) Find(filter *types.SwapFilter, pagination *types.Pagina
 	return swaps, nil
 }
 
-func (e *swapRepository) Count(filter *types.SwapFilter) (int64, error) {
+func (e *swapRepository) Count(filter *modelv2.SwapFilter) (int64, error) {
 	return e.collection.CountDocuments(e.context, &filter)
 }
 
-func (e *swapRepository) Create(data *types.SwapCreateReq) (*primitive.ObjectID, error) {
+func (e *swapRepository) Create(data *modelv2.SwapCreateReq) (*primitive.ObjectID, error) {
 	data.ID = primitive.NewObjectID()
 
 	if err := data.Validate(); err != nil {

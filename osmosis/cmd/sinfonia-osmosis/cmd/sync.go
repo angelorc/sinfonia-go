@@ -1,7 +1,22 @@
 package cmd
 
 import (
+	"fmt"
+	"github.com/angelorc/sinfonia-go/config"
+	"github.com/angelorc/sinfonia-go/mongo/db"
+	"github.com/angelorc/sinfonia-go/mongo/model"
+	"github.com/angelorc/sinfonia-go/mongo/modelv2"
+	"github.com/angelorc/sinfonia-go/mongo/repository"
+	"github.com/angelorc/sinfonia-go/osmosis/chain"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/osmosis-labs/osmosis/v9/x/gamm/pool-models/balancer"
+	gammtypes "github.com/osmosis-labs/osmosis/v9/x/gamm/types"
 	"github.com/spf13/cobra"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"log"
+	"strconv"
+	"strings"
+	"time"
 )
 
 func GetSyncCmd() *cobra.Command {
@@ -11,14 +26,167 @@ func GetSyncCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		//GetSyncPoolCmd(),
-		//GetSyncSwapCmd(),
+		GetSyncOldPoolCmd(),
+		GetSyncPoolCmd(),
+		GetSyncSwapCmd(),
 	)
 
 	return cmd
 }
 
-/*
+func GetSyncSwapCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "swaps",
+		Short:   "sync swaps from latest blocks",
+		Example: "sinfonia-osmosis sync swaps --mongo-dbname sinfonia-test",
+		Args:    cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfgPath, err := cmd.Flags().GetString(flagConfig)
+			if err != nil {
+				return err
+			}
+
+			cfg, err := config.NewConfig(cfgPath)
+			if err != nil {
+				return err
+			}
+
+			defaultDB := db.Database{
+				DataBaseRefName: "default",
+				URL:             cfg.Mongo.Uri,
+				DataBaseName:    cfg.Mongo.DbName,
+				RetryWrites:     strconv.FormatBool(cfg.Mongo.Retry),
+			}
+			defaultDB.Init()
+			defer defaultDB.Disconnect()
+
+			if err := syncSwaps(); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	}
+
+	addConfigFlag(cmd)
+
+	return cmd
+}
+
+func chunkSlice(slice []modelv2.Attribute, chunkSize int) [][]modelv2.Attribute {
+	var chunks [][]modelv2.Attribute
+	for {
+		if len(slice) == 0 {
+			break
+		}
+
+		// necessary check to avoid slicing beyond
+		// slice capacity
+		if len(slice) < chunkSize {
+			chunkSize = len(slice)
+		}
+
+		chunks = append(chunks, slice[0:chunkSize])
+		slice = slice[chunkSize:]
+	}
+
+	return chunks
+}
+
+func convertCoinToCoinModel(coin sdk.Coin) modelv2.Coin {
+	return modelv2.Coin{
+		Amount: coin.Amount.String(),
+		Denom:  coin.Denom,
+	}
+}
+
+func syncSwaps() error {
+	// get last available height on db
+	lastBlock := model.GetLastHeight()
+
+	// get last block synced from account
+	sync := new(model.Sync)
+	sync.One()
+
+	if sync.ID.IsZero() {
+		sync.ID = primitive.NewObjectID()
+		sync.Swaps = int64(0)
+	}
+
+	txRepo := repository.NewTransactionRepository()
+	swapRepo := repository.NewSwapRepository()
+	poolRepo := repository.NewPoolRepository()
+
+	txs, err := txRepo.FindEventsByType("token_swapped", sync.Swaps, lastBlock)
+
+	if err != nil {
+		log.Fatalf("Failed to find events. Err: %s", err.Error())
+	}
+
+	for _, tx := range txs {
+		for _, evt := range tx.Events {
+			groupedAttrs := chunkSlice(evt.Attributes, 5)
+
+			for _, attrs := range groupedAttrs {
+				swapCreate := &modelv2.SwapCreateReq{
+					ChainID: tx.ChainID,
+					Height:  tx.Height,
+					TxHash:  tx.Hash,
+					Fee:     modelv2.Coin{},
+					Time:    tx.Time,
+				}
+
+				for _, attr := range attrs {
+					switch attr.Key {
+					case "sender":
+						swapCreate.Account = attr.Value
+					case "pool_id":
+						poolID, _ := strconv.ParseInt(attr.Value, 10, 64)
+						swapCreate.PoolId = poolID
+					case "tokens_in":
+						tokenIn, _ := sdk.ParseCoinNormalized(attr.Value)
+						swapCreate.TokenIn = convertCoinToCoinModel(tokenIn)
+					case "tokens_out":
+						tokenOut, _ := sdk.ParseCoinNormalized(attr.Value)
+						swapCreate.TokenOut = convertCoinToCoinModel(tokenOut)
+					}
+				}
+
+				pool := poolRepo.FindByPoolID(uint64(swapCreate.PoolId))
+				swapCreate.Fee = calcFee(swapCreate.TokenIn.String(), pool.SwapFee)
+
+				_, err := swapRepo.Create(swapCreate)
+
+				if err != nil {
+					log.Fatalf("Failed to write swap to db. Err: %s", err.Error())
+				}
+
+			}
+		}
+	}
+
+	// update sync with last synced height
+	sync.Swaps = lastBlock
+	if err := sync.Save(); err != nil {
+		return err
+	}
+
+	fmt.Printf("swaps synced to block %d", sync.Swaps)
+
+	return nil
+}
+
+func calcFee(tokenInStr, swapFeeStr string) modelv2.Coin {
+	tokenIn, _ := sdk.ParseCoinNormalized(tokenInStr)
+	swapFee, _ := sdk.NewDecFromStr(swapFeeStr)
+	tokenInAfterFee := tokenIn.Amount.ToDec().Mul(sdk.OneDec().Sub(swapFee)).TruncateInt()
+
+	return modelv2.Coin{
+		Denom:  tokenIn.Denom,
+		Amount: tokenIn.Amount.Sub(tokenInAfterFee).String(),
+	}
+}
+
 func GetSyncPoolCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "pools",
@@ -63,11 +231,11 @@ func GetSyncPoolCmd() *cobra.Command {
 	return cmd
 }
 
-func GetSyncSwapCmd() *cobra.Command {
+func GetSyncOldPoolCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "swaps",
-		Short:   "sync swaps from latest blocks",
-		Example: "sinfonia-osmosis sync swaps --mongo-dbname sinfonia-test",
+		Use:     "old-pools",
+		Short:   "sync old-pools from latest blocks",
+		Example: "sinfonia-osmosis sync old-pools ",
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfgPath, err := cmd.Flags().GetString(flagConfig)
@@ -89,8 +257,51 @@ func GetSyncSwapCmd() *cobra.Command {
 			defaultDB.Init()
 			defer defaultDB.Disconnect()
 
-			if err := syncSwaps(); err != nil {
+			client, err := chain.NewClient(&cfg.Osmosis)
+			if err != nil {
+				return fmt.Errorf("failed to get RPC endpoints on chain %s. err: %v", "osmosis", err)
+			}
+
+			poolRepo := repository.NewPoolRepository()
+			poolRepo.EnsureIndexes()
+			if err != nil {
 				return err
+			}
+
+			// import only the first 750 pools, new pools will be imported with the cmd `sync pools`
+			for i := 1; i <= 750; i++ {
+				poolRes, err := client.QueryPoolByID(uint64(i))
+				if err != nil {
+					return fmt.Errorf("error while fetching poolID, err: %s", err.Error())
+				}
+
+				var poolI gammtypes.PoolI
+				err = client.Codec.Marshaler.UnpackAny(poolRes.GetPool(), &poolI)
+				if err != nil {
+					log.Fatalf("error while decoding the new pool")
+				}
+
+				pool, ok := poolI.(*balancer.Pool)
+				if !ok {
+					log.Fatalf("error while decoding the new pool")
+				}
+
+				_, err = poolRepo.Create(&modelv2.PoolCreateReq{
+					ChainID:    "osmosis-1",
+					Height:     0,
+					TxHash:     "",
+					PoolID:     uint64(i),
+					PoolAssets: convertPoolAssetsToModel(pool.GetAllPoolAssets()),
+					SwapFee:    pool.GetSwapFee(sdk.Context{}).String(),
+					ExitFee:    pool.GetExitFee(sdk.Context{}).String(),
+					Time:       time.Time{},
+				})
+
+				if err != nil {
+					if !strings.Contains(err.Error(), "E11000 duplicate key error") {
+						log.Fatalf("Failed to write pool to db. Err: %s", err.Error())
+					}
+				}
 			}
 
 			return nil
@@ -102,18 +313,91 @@ func GetSyncSwapCmd() *cobra.Command {
 	return cmd
 }
 
-func parseAttrs(attrs []model.Attribute) (poolID int64, tokensIn, tokensOut string) {
-	for _, attr := range attrs {
-		switch attr.Key {
-		case "pool_id":
-			poolID, _ = strconv.ParseInt(attr.Value, 0, 64)
-		case "tokens_in":
-			tokensIn = attr.Value
-		case "tokens_out":
-			tokensOut = attr.Value
+func syncPools(client *chain.Client) error {
+	// get last available height on db
+	lastBlock := model.GetLastHeight()
+
+	// get last block synced from account
+	sync := new(model.Sync)
+	sync.One()
+
+	if sync.ID.IsZero() {
+		sync.ID = primitive.NewObjectID()
+		sync.Pools = int64(0)
+	}
+
+	txRepo := repository.NewTransactionRepository()
+	poolRepo := repository.NewPoolRepository()
+
+	txs, err := txRepo.FindEventsByType("pool_created", sync.Swaps, lastBlock)
+
+	if err != nil {
+		log.Fatalf("Failed to find events. Err: %s", err.Error())
+	}
+
+	for _, tx := range txs {
+		for _, evt := range tx.Events {
+			poolID, err := strconv.ParseUint(evt.Attributes[0].Value, 0, 64)
+			if err != nil {
+				return fmt.Errorf("error while parsing poolID, err: %s", err.Error())
+			}
+
+			poolRes, err := client.QueryPoolByID(poolID)
+			if err != nil {
+				return fmt.Errorf("error while fetching poolID, err: %s", err.Error())
+			}
+
+			var poolI gammtypes.PoolI
+			err = client.Codec.Marshaler.UnpackAny(poolRes.GetPool(), &poolI)
+			if err != nil {
+				log.Fatalf("error while decoding the new pool")
+			}
+
+			pool, ok := poolI.(*balancer.Pool)
+			if !ok {
+				log.Fatalf("error while decoding the new pool")
+			}
+
+			_, err = poolRepo.Create(&modelv2.PoolCreateReq{
+				ChainID:    tx.ChainID,
+				Height:     tx.Height,
+				TxHash:     tx.Hash,
+				PoolID:     poolID,
+				PoolAssets: convertPoolAssetsToModel(pool.GetAllPoolAssets()),
+				SwapFee:    pool.GetSwapFee(sdk.Context{}).String(),
+				ExitFee:    pool.GetExitFee(sdk.Context{}).String(),
+				Time:       tx.Time,
+			})
+
+			if err != nil {
+				log.Fatalf("Failed to write swap to db. Err: %s", err.Error())
+			}
+
 		}
 	}
-	return poolID, tokensIn, tokensOut
+
+	// update sync with last synced height
+	sync.Pools = lastBlock
+	if err := sync.Save(); err != nil {
+		return err
+	}
+
+	fmt.Printf("pools synced to block %d", sync.Pools)
+
+	return nil
+}
+
+func convertPoolAssetsToModel(pa []balancer.PoolAsset) []modelv2.PoolAsset {
+	newPoolAssets := make([]modelv2.PoolAsset, len(pa))
+
+	for i, p := range pa {
+		newPoolAssets[i] = modelv2.PoolAsset{
+			Token:  modelv2.Coin{Denom: p.Token.Denom, Amount: p.Token.Amount.String()},
+			Weight: p.Weight.String(),
+		}
+	}
+
+	return newPoolAssets
 }
 
 func calcVolumeUSD(tokensIn, tokensOut string, ts time.Time) float64 {
@@ -148,246 +432,3 @@ func calcVolumeUSD(tokensIn, tokensOut string, ts time.Time) float64 {
 	//return fmt.Sprintf("%f", volume)
 	return volume
 }
-
-func syncSwaps() error {
-	// get last available height on db
-	lastBlock := model.GetLastHeight()
-
-	// get last block synced from account
-	sync := new(model.Sync)
-	sync.One()
-
-	if sync.ID.IsZero() {
-		sync.ID = primitive.NewObjectID()
-		sync.Swaps = int64(0)
-	}
-
-	txsLogs, err := model.GetTxsAndLogsByMessageType("/osmosis.gamm.v1beta1.MsgSwapExactAmountIn", sync.Swaps, lastBlock)
-	if err != nil {
-		return err
-	}
-
-	for _, txLogs := range txsLogs {
-		for _, txlog := range txLogs.Tx.Logs {
-			for _, evt := range txlog.Events {
-				switch evt.Type {
-				case "token_swapped":
-					poolID, tokensIn, tokensOut := parseAttrs(evt.Attributes)
-
-					pool := new(model.Pool)
-					pool.One(
-						&model.PoolWhere{
-							PoolID: &poolID,
-						},
-					)
-
-					fee := calcFee(tokensIn, pool.SwapFee)
-					volume := calcVolumeUSD(tokensIn, tokensOut, txLogs.Time)
-
-					// get volume by day
-					// {
-					//    _id: {
-					//      date: {$dateToString: { format: "%Y-%m-%d", date: "$time" }},
-					//    },
-					//    volume: {$sum: "$volume"}
-					// }
-					// {
-					//   "_id.date": 1
-					// }
-
-					// get volume by pool
-					// {
-					//    _id: {
-					//      pool: "$pool_id",
-					//    },
-					//    volume: {$sum: "$volume"}
-					// }
-					// {
-					//   "_id.volume": -1
-					// }
-
-					swapModel := new(model.Swap)
-					data := &model.SwapCreate{
-						ChainID:   &txLogs.ChainID,
-						Height:    &txLogs.Height,
-						TxID:      &txLogs.TxID,
-						MsgIndex:  &txLogs.MsgIndex,
-						PoolId:    &poolID,
-						TokensIn:  &tokensIn,
-						TokensOut: &tokensOut,
-						Account:   &txLogs.Signer,
-						Fee:       &fee,
-						Volume:    &volume,
-						Time:      txLogs.Time,
-					}
-
-					if err := swapModel.Create(data); err != nil {
-						return err
-					}
-				}
-			}
-		}
-	}
-
-	// update sync with last synced height
-	sync.Swaps = lastBlock
-	if err := sync.Save(); err != nil {
-		return err
-	}
-
-	fmt.Printf("%d swaps synced to block %d ", len(txsLogs), sync.Swaps)
-
-	return nil
-}
-
-func calcFee(tokenInStr, swapFeeStr string) string {
-	tokenIn, _ := sdk.ParseCoinNormalized(tokenInStr)
-	swapFee, _ := sdk.NewDecFromStr(swapFeeStr)
-	tokenInAfterFee := tokenIn.Amount.ToDec().Mul(sdk.OneDec().Sub(swapFee)).TruncateInt()
-
-	return sdk.Coin{
-		Denom:  tokenIn.Denom,
-		Amount: tokenIn.Amount.Sub(tokenInAfterFee),
-	}.String()
-}
-
-func syncPools(client *chain.Client) error {
-	// get last available height on db
-	lastBlock := model.GetLastHeight()
-
-	// get last block synced from account
-	sync := new(model.Sync)
-	sync.One()
-
-	if sync.ID.IsZero() {
-		sync.ID = primitive.NewObjectID()
-		sync.Pools = int64(0)
-	}
-
-	txsLogs, err := model.GetTxsAndLogsByMessageType("/osmosis.gamm.poolmodels.balancer.v1beta1.MsgCreateBalancerPool", sync.Pools, lastBlock)
-	if err != nil {
-		return err
-	}
-
-	for _, txLogs := range txsLogs {
-		for _, txlog := range txLogs.Tx.Logs {
-			for _, evt := range txlog.Events {
-				switch evt.Type {
-				case "pool_created":
-					poolID, err := strconv.ParseUint(evt.Attributes[0].Value, 0, 64)
-					if err != nil {
-						return fmt.Errorf("error while parsing poolID, err: %s", err.Error())
-					}
-
-					poolRes, err := client.QueryPoolByID(poolID)
-					if err != nil {
-						return fmt.Errorf("error while fetching poolID, err: %s", err.Error())
-					}
-
-					var poolI types.PoolI
-					err = client.Codec.Marshaler.UnpackAny(poolRes.GetPool(), &poolI)
-					if err != nil {
-						log.Fatalf("error while decoding the new pool")
-					}
-
-					pool, ok := poolI.(*balancer.Pool)
-					if !ok {
-						log.Fatalf("error while decoding the new pool")
-					}
-
-					allPoolAssets := pool.GetAllPoolAssets()
-
-					// check if is contains a bitsong fantoken
-					found := false
-					for _, asset := range allPoolAssets {
-						// if is an ibc token
-						if strings.HasPrefix(asset.Token.Denom, "ibc/") {
-							// check fantoken by alias
-							var fantoken model.Fantoken
-
-							if err := fantoken.One(&model.FantokenWhere{
-								Alias: &asset.Token.Denom,
-							}); err != nil {
-								log.Fatalf("error while querying fantoken: %v", err)
-							}
-
-							// if exist return true
-							if !fantoken.ID.IsZero() {
-								found = true
-							} else {
-								// else  query ibc denom
-								denomRes, err := client.QueryIBCDenomTrace(strings.ReplaceAll(asset.Token.Denom, "ibc/", ""))
-								if err != nil {
-									return fmt.Errorf("error while fetching denom-trace, err: %s", err.Error())
-								}
-
-								if strings.HasPrefix(denomRes.DenomTrace.BaseDenom, "ft") {
-									if strings.HasPrefix(denomRes.DenomTrace.Path, "transfer/channel-0") {
-										if err := fantoken.One(&model.FantokenWhere{
-											Denom: &denomRes.DenomTrace.BaseDenom,
-										}); err != nil {
-											log.Fatalf("error while querying fantoken: %v", err)
-										}
-
-										// add the alias
-										if err := fantoken.AddAlias(asset.Token.Denom); err != nil {
-											log.Fatalf("error while adding a fantoken alias: %v", err)
-										}
-
-										found = true
-									}
-								}
-							}
-						}
-					}
-
-					if !found {
-						continue
-					}
-
-					poolModel := new(model.Pool)
-					data := &model.PoolCreate{
-						ChainID:    &txLogs.ChainID,
-						Height:     &txLogs.Height,
-						TxID:       &txLogs.TxID,
-						MsgIndex:   &txLogs.MsgIndex,
-						PoolID:     poolID,
-						PoolAssets: convertPoolAssetsToModel(allPoolAssets),
-						SwapFee:    pool.GetSwapFee(sdk.Context{}).String(),
-						ExitFee:    pool.GetExitFee(sdk.Context{}).String(),
-						Sender:     txLogs.Signer,
-						Time:       txLogs.Time,
-					}
-
-					if err := poolModel.Create(data); err != nil {
-						return err
-					}
-				}
-			}
-		}
-	}
-
-	// update sync with last synced height
-	sync.Pools = lastBlock
-	if err := sync.Save(); err != nil {
-		return err
-	}
-
-	fmt.Printf("%d pools synced to block %d ", len(txsLogs), sync.Pools)
-
-	return nil
-}
-
-func convertPoolAssetsToModel(pa []balancer.PoolAsset) []model.PoolAsset {
-	newPoolAssets := make([]model.PoolAsset, len(pa))
-
-	for i, p := range pa {
-		newPoolAssets[i] = model.PoolAsset{
-			Token:  model.Coin{Denom: p.Token.Denom, Amount: p.Token.Amount.String()},
-			Weight: p.Weight.String(),
-		}
-	}
-
-	return newPoolAssets
-}
-*/

@@ -160,5 +160,14 @@ func (b *blockRepository) EnsureIndexes() (string, error) {
 		Options: options.Index().SetUnique(true),
 	}
 
+	b.collection.Indexes().CreateOne(b.context, index)
+
+	index = mongo.IndexModel{
+		Keys: bson.D{
+			{"id", 1},
+		},
+		Options: options.Index().SetUnique(true),
+	}
+
 	return b.collection.Indexes().CreateOne(b.context, index)
 }
