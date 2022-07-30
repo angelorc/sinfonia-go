@@ -150,11 +150,11 @@ func (i *Indexer) IndexTransactions(height int64) error {
 		i.parseTxs(blockDB.ID, block.Block.ChainID, height, block.Block.Data.Txs, block.Block.Time)
 	}
 
-	if i.modules.BlockResults {
+	/*if i.modules.BlockResults {
 		if err := i.parseBlockResults(height, block.Block.Time); err != nil {
 			return err
 		}
-	}
+	}*/
 
 	return nil
 }
