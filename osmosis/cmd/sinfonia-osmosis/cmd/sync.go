@@ -125,7 +125,7 @@ func syncSwaps() error {
 	swapRepo.EnsureIndexes()
 	poolRepo := repository.NewPoolRepository()
 
-	limit := 50
+	limit := 500
 	fromBlock := sync.Swaps + 1
 	toBlock := fromBlock + int64(limit)
 	batches := int(math.Ceil(float64(lastBlock-fromBlock) / float64(limit)))
@@ -365,7 +365,7 @@ func syncPools(client *chain.Client) error {
 	txRepo := repository.NewTransactionRepository()
 	poolRepo := repository.NewPoolRepository()
 
-	limit := 50
+	limit := 500
 	fromBlock := sync.Pools + 1
 	toBlock := fromBlock + int64(limit)
 	batches := int(math.Ceil(float64(lastBlock-fromBlock) / float64(limit)))
