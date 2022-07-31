@@ -588,7 +588,6 @@ func syncIncentives(client *chain.Client) error {
 		for _, evt := range blockResults.BeginBlockEvents {
 			switch evt.Type {
 			case types.TypeEvtDistribution:
-				log.Fatalf(evt.String())
 				var incentive *modelv2.IncentiveCreateReq
 
 				for _, attr := range evt.Attributes {
