@@ -588,7 +588,7 @@ func syncIncentives(client *chain.Client) error {
 		for _, evt := range blockResults.BeginBlockEvents {
 			switch evt.Type {
 			case types.TypeEvtDistribution:
-				var incentive *modelv2.IncentiveCreateReq
+				var incentive modelv2.IncentiveCreateReq
 
 				for _, attr := range evt.Attributes {
 					switch string(attr.Key) {
@@ -603,7 +603,7 @@ func syncIncentives(client *chain.Client) error {
 					}
 				}
 
-				incentives = append(incentives, incentive)
+				incentives = append(incentives, &incentive)
 			}
 
 		}
