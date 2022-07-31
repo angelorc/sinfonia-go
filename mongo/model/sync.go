@@ -29,6 +29,7 @@ type Sync struct {
 	MerkledropProofs int64              `json:"merkledrop_proofs" bson:"merkledrop_proofs"`
 	Pools            int64              `json:"pools" bson:"pools"`
 	Swaps            int64              `json:"swaps" bson:"swaps"`
+	Incentives       int64              `json:"incentives" bson:"incentives"`
 }
 
 /**

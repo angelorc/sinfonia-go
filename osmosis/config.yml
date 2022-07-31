@@ -27,4 +27,4 @@ osmosis:
   rpc-addr: "https://rpc.osmosis.bas.network:443"
   grpc-addr: "http://142.132.147.182:9090"
   grpc-insecure: true
-  timeout: "10s"
+  timeout: "300s"

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"github.com/angelorc/sinfonia-go/config"
 	"github.com/angelorc/sinfonia-go/mongo/db"
@@ -11,6 +12,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/osmosis-labs/osmosis/v9/x/gamm/pool-models/balancer"
 	gammtypes "github.com/osmosis-labs/osmosis/v9/x/gamm/types"
+	"github.com/osmosis-labs/osmosis/v9/x/incentives/types"
 	"github.com/spf13/cobra"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
@@ -30,6 +32,7 @@ func GetSyncCmd() *cobra.Command {
 		GetSyncOldPoolCmd(),
 		GetSyncPoolCmd(),
 		GetSyncSwapCmd(),
+		GetSyncIncentivesCmd(),
 	)
 
 	return cmd
@@ -99,6 +102,17 @@ func convertCoinToCoinModel(coin sdk.Coin) modelv2.Coin {
 		Amount: coin.Amount.String(),
 		Denom:  coin.Denom,
 	}
+}
+
+func convertCoinsToCoinsModel(coins []sdk.Coin) []modelv2.Coin {
+	output := make([]modelv2.Coin, 0)
+
+	for _, coin := range coins {
+		outputCoin := convertCoinToCoinModel(coin)
+		output = append(output, outputCoin)
+	}
+
+	return output
 }
 
 func syncSwaps() error {
@@ -490,4 +504,128 @@ func calcVolumeUSD(tokensIn, tokensOut string, ts time.Time) float64 {
 
 	//return fmt.Sprintf("%f", volume)
 	return volume
+}
+
+func GetSyncIncentivesCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "incentives",
+		Short:   "sync incentives from latest blocks",
+		Example: "sinfonia-osmosis sync incentives",
+		Args:    cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfgPath, err := cmd.Flags().GetString(flagConfig)
+			if err != nil {
+				return err
+			}
+
+			cfg, err := config.NewConfig(cfgPath)
+			if err != nil {
+				return err
+			}
+
+			defaultDB := db.Database{
+				DataBaseRefName: "default",
+				URL:             cfg.Mongo.Uri,
+				DataBaseName:    cfg.Mongo.DbName,
+				RetryWrites:     strconv.FormatBool(cfg.Mongo.Retry),
+			}
+			defaultDB.Init()
+			defer defaultDB.Disconnect()
+
+			client, err := chain.NewClient(&cfg.Osmosis)
+			if err != nil {
+				return fmt.Errorf("failed to get RPC endpoints on chain %s. err: %v", "osmosis", err)
+			}
+
+			if err := syncIncentives(client); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	}
+
+	addConfigFlag(cmd)
+
+	return cmd
+}
+
+func syncIncentives(client *chain.Client) error {
+	// get last available height on db
+	lastBlock := model.GetLastHeight("osmosis-1")
+	// TODO: get first available block
+	defaultBlock := 5112889
+
+	// get last block synced from account
+	sync := new(model.Sync)
+	sync.One()
+
+	if sync.ID.IsZero() {
+		sync.ID = primitive.NewObjectID()
+		sync.Incentives = int64(defaultBlock)
+	}
+
+	if sync.Incentives < int64(defaultBlock) {
+		sync.Incentives = int64(defaultBlock)
+	}
+
+	fromBlock := sync.Incentives + 1
+
+	var incentives []*modelv2.IncentiveCreateReq
+
+	for height := fromBlock; height < lastBlock; height++ {
+		log.Printf("querying block results, height %d", height)
+
+		ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
+
+		blockResults, err := client.QueryBlockResults(ctx, &height)
+		if err != nil {
+			return fmt.Errorf("error while fetching blockresults, err: %s", err.Error())
+		}
+
+		log.Printf("iterating block results, height %d", height)
+
+		for _, evt := range blockResults.BeginBlockEvents {
+			switch evt.Type {
+			case types.TypeEvtDistribution:
+				log.Fatalf(evt.String())
+				var incentive *modelv2.IncentiveCreateReq
+
+				for _, attr := range evt.Attributes {
+					switch string(attr.Key) {
+					case types.AttributeReceiver:
+						incentive.Receiver = string(attr.Value)
+					case types.AttributeAmount:
+						assets, err := sdk.ParseCoinsNormalized(string(attr.Value))
+						if err != nil {
+							log.Fatalf("error while converting coins")
+						}
+						incentive.Assets = convertCoinsToCoinsModel(assets)
+					}
+				}
+
+				incentives = append(incentives, incentive)
+			}
+
+		}
+	}
+
+	// store incentives
+	if len(incentives) > 0 {
+		incentiveRepo := repository.NewIncentiveRepository()
+		_, err := incentiveRepo.CreateMany(incentives)
+		if err != nil {
+			return fmt.Errorf("error while storing incentives, err: %s", err.Error())
+		}
+	}
+
+	// update sync with last synced height
+	sync.Incentives = lastBlock
+	if err := sync.Save(); err != nil {
+		return err
+	}
+
+	fmt.Printf("incentives synced to block %d", sync.Incentives)
+
+	return nil
 }
