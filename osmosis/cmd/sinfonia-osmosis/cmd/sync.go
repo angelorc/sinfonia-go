@@ -571,9 +571,9 @@ func syncIncentives(client *chain.Client) error {
 
 	fromBlock := sync.Incentives + 1
 
-	var incentives []*modelv2.IncentiveCreateReq
-
 	for height := fromBlock; height < lastBlock; height++ {
+		incentiveRepo := repository.NewIncentiveRepository()
+
 		log.Printf("querying block results, height %d", height)
 
 		ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
@@ -607,18 +607,12 @@ func syncIncentives(client *chain.Client) error {
 					}
 				}
 
-				incentives = append(incentives, &incentive)
+				_, err := incentiveRepo.Create(&incentive)
+				if err != nil {
+					return fmt.Errorf("error while storing incentive, err: %s", err.Error())
+				}
 			}
 
-		}
-
-		// store incentives
-		if len(incentives) > 0 {
-			incentiveRepo := repository.NewIncentiveRepository()
-			_, err := incentiveRepo.CreateMany(incentives)
-			if err != nil {
-				return fmt.Errorf("error while storing incentives, err: %s", err.Error())
-			}
 		}
 
 		// update sync with last synced height
