@@ -607,21 +607,21 @@ func syncIncentives(client *chain.Client) error {
 			}
 
 		}
-	}
 
-	// store incentives
-	if len(incentives) > 0 {
-		incentiveRepo := repository.NewIncentiveRepository()
-		_, err := incentiveRepo.CreateMany(incentives)
-		if err != nil {
-			return fmt.Errorf("error while storing incentives, err: %s", err.Error())
+		// store incentives
+		if len(incentives) > 0 {
+			incentiveRepo := repository.NewIncentiveRepository()
+			_, err := incentiveRepo.CreateMany(incentives)
+			if err != nil {
+				return fmt.Errorf("error while storing incentives, err: %s", err.Error())
+			}
 		}
-	}
 
-	// update sync with last synced height
-	sync.Incentives = lastBlock
-	if err := sync.Save(); err != nil {
-		return err
+		// update sync with last synced height
+		sync.Incentives = lastBlock
+		if err := sync.Save(); err != nil {
+			return err
+		}
 	}
 
 	fmt.Printf("incentives synced to block %d", sync.Incentives)
