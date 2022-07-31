@@ -588,7 +588,11 @@ func syncIncentives(client *chain.Client) error {
 		for _, evt := range blockResults.BeginBlockEvents {
 			switch evt.Type {
 			case types.TypeEvtDistribution:
-				var incentive modelv2.IncentiveCreateReq
+				incentive := modelv2.IncentiveCreateReq{
+					ChainID: "osmosis-1",
+					Height:  height,
+					Time:    time.Now(), // add block time
+				}
 
 				for _, attr := range evt.Attributes {
 					switch string(attr.Key) {
