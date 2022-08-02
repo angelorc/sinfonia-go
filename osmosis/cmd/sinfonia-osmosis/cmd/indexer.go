@@ -71,12 +71,16 @@ func GetIndexerParserCmd() *cobra.Command {
 				return err
 			}
 
+			syncAll := false
+
 			if startHeight <= 0 {
 				startHeight = blockRepo.Latest().Height + 1
+				syncAll = true
 			}
 
 			if endHeight <= startHeight {
 				endHeight = client.LatestBlockHeight(context.Background())
+				syncAll = true
 			}
 
 			concurrent, err := cmd.Flags().GetInt(flagConcurrent)
@@ -96,6 +100,16 @@ func GetIndexerParserCmd() *cobra.Command {
 			indexer.
 				NewIndexer(client, parseModules(modulesStr), concurrent).
 				Parse(startHeight, endHeight)
+
+			if syncAll {
+				if err := syncPools(client); err != nil {
+					return err
+				}
+
+				if err := syncSwaps(); err != nil {
+					return err
+				}
+			}
 
 			return nil
 		},
