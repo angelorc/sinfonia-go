@@ -142,7 +142,7 @@ func syncSwaps() error {
 	poolRepo := repository.NewPoolRepository()
 	hrp := repository.NewHistoricalPriceRepository()
 
-	limit := 500
+	limit := 2500
 	fromBlock := sync.Swaps + 1
 	toBlock := fromBlock + int64(limit)
 	batches := int(math.Ceil(float64(lastBlock-fromBlock) / float64(limit)))
@@ -203,12 +203,16 @@ func syncSwaps() error {
 						if len(prices) > 0 {
 							usdValue := (swapCreate.TokenIn.GetAmount() * 0.000001) * prices[0].GetUsdPrice()
 							swapCreate.UsdValue = fmt.Sprintf("%2f", usdValue)
+						} else {
+							log.Fatalf("price not found %s", tx.Time.String())
 						}
 					} else if swapCreate.TokenOut.Denom == btsgIBCDenom {
 						prices := hrp.FindByAsset("bitsong", tx.Time)
 						if len(prices) > 0 {
 							usdValue := (swapCreate.TokenOut.GetAmount() * 0.000001) * prices[0].GetUsdPrice()
 							swapCreate.UsdValue = fmt.Sprintf("%2f", usdValue)
+						} else {
+							log.Fatalf("price not found %s", tx.Time.String())
 						}
 					}
 
