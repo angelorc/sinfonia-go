@@ -33,6 +33,8 @@ func GetSyncCmd() *cobra.Command {
 		GetSyncPoolCmd(),
 		GetSyncSwapCmd(),
 		GetSyncIncentivesCmd(),
+		GetSyncPricesCmd(),
+		GetSyncHistoricalPricesCmd(),
 	)
 
 	return cmd
