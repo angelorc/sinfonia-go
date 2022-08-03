@@ -38,7 +38,7 @@ type SwapRepository interface {
 
 func NewSwapRepository() SwapRepository {
 	coll := db.GetCollection(swapCollectionName, swapDbRefName)
-	ctx, _ := context.WithTimeout(context.Background(), 600*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 3000*time.Second)
 	//defer cancel()
 
 	return &swapRepository{context: ctx, collection: coll}

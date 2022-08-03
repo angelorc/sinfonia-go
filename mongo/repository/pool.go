@@ -38,7 +38,7 @@ type PoolRepository interface {
 
 func NewPoolRepository() PoolRepository {
 	coll := db.GetCollection(poolCollectionName, poolDbRefName)
-	ctx, _ := context.WithTimeout(context.Background(), 600*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 3000*time.Second)
 	//defer cancel()
 
 	return &poolRepository{context: ctx, collection: coll}
