@@ -17,6 +17,7 @@ type Swap struct {
 	TokenOut Coin   `json:"token_out" bson:"token_out"`
 	Account  string `json:"account" bson:"account" validate:"required"`
 	Fee      Coin   `json:"fee" bson:"fee"`
+	UsdValue string `json:"usd_value" bson:"usd_value"`
 
 	Time time.Time `json:"time" bson:"time" validate:"required"`
 }
@@ -45,6 +46,7 @@ type SwapCreateReq struct {
 	TokenOut Coin   `json:"token_out" bson:"token_out" validate:"required"`
 	Account  string `json:"account" bson:"account" validate:"required"`
 	Fee      Coin   `json:"fee" bson:"fee"`
+	UsdValue string `json:"usd_value" bson:"usd_value"`
 
 	Time time.Time `json:"time" bson:"time" validate:"required"`
 }

@@ -3,11 +3,17 @@ package modelv2
 import (
 	"github.com/angelorc/sinfonia-go/utility"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"strconv"
 	"time"
 )
 
 type Price struct {
 	Usd string `json:"usd" bson:"usd" validate:"required"`
+}
+
+func (p Price) GetUsdPrice() float64 {
+	price, _ := strconv.ParseFloat(p.Usd, 64)
+	return price
 }
 
 type HistoricalPrice struct {

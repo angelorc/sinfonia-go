@@ -31,7 +31,7 @@ type HistoricalPriceRepository interface {
 	EnsureIndexes() (string, error)
 
 	FindByID(id primitive.ObjectID) *modelv2.HistoricalPrice
-	FindByAsset(asset string) []*modelv2.HistoricalPrice
+	FindByAsset(asset string, time time.Time) []*modelv2.Price
 
 	Create(data *modelv2.HistoricalPriceCreateReq) (*primitive.ObjectID, error)
 }
@@ -58,8 +58,8 @@ func (e *historicalPriceRepository) FindOne(filter *modelv2.HistoricalPriceFilte
 func (e *historicalPriceRepository) Find(filter *modelv2.HistoricalPriceFilter, pagination *types.PaginationReq) ([]*modelv2.HistoricalPrice, error) {
 	var hps []*modelv2.HistoricalPrice
 
-	orderByKey := "height"
-	orderByValue := -1
+	orderByKey := "time"
+	orderByValue := 1
 
 	options := options.Find()
 	if pagination.Limit != nil {
@@ -114,14 +114,48 @@ func (e *historicalPriceRepository) FindByID(id primitive.ObjectID) *modelv2.His
 	return e.FindOne(&modelv2.HistoricalPriceFilter{Id: &id})
 }
 
-func (e *historicalPriceRepository) FindByAsset(asset string) []*modelv2.HistoricalPrice {
-	hps, _ := e.Find(
-		&modelv2.HistoricalPriceFilter{
-			Asset: &asset,
+func (e *historicalPriceRepository) FindByAsset(asset string, time time.Time) []*modelv2.Price {
+	var prices []*modelv2.Price
+
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{
+				"asset": asset,
+				"time": bson.M{
+					"$gte": time,
+				},
+			},
 		},
-		&types.PaginationReq{},
-	)
-	return hps
+		{
+			"$sort": bson.M{
+				"time": 1,
+			},
+		},
+		{
+			"$limit": 1,
+		},
+		{
+			"$project": bson.M{
+				"_id": 0,
+				"usd": bson.M{
+					"$first": "$price.usd",
+				},
+			},
+		},
+	}
+
+	// aggregate pipeline
+	accCursor, err := e.collection.Aggregate(e.context, pipeline)
+	if err != nil {
+		return prices
+	}
+
+	// decode
+	if err = accCursor.All(e.context, &prices); err != nil {
+		return prices
+	}
+
+	return prices
 }
 
 func (e *historicalPriceRepository) Create(data *modelv2.HistoricalPriceCreateReq) (*primitive.ObjectID, error) {

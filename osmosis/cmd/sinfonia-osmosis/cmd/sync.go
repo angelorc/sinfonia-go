@@ -140,6 +140,7 @@ func syncSwaps() error {
 	swapRepo := repository.NewSwapRepository()
 	swapRepo.EnsureIndexes()
 	poolRepo := repository.NewPoolRepository()
+	hrp := repository.NewHistoricalPriceRepository()
 
 	limit := 500
 	fromBlock := sync.Swaps + 1
@@ -166,11 +167,12 @@ func syncSwaps() error {
 
 				for _, attrs := range groupedAttrs {
 					swapCreate := &modelv2.SwapCreateReq{
-						ChainID: tx.ChainID,
-						Height:  tx.Height,
-						TxHash:  tx.Hash,
-						Fee:     modelv2.Coin{},
-						Time:    tx.Time,
+						ChainID:  tx.ChainID,
+						Height:   tx.Height,
+						TxHash:   tx.Hash,
+						Fee:      modelv2.Coin{},
+						UsdValue: "0",
+						Time:     tx.Time,
 					}
 
 					for _, attr := range attrs {
@@ -190,7 +192,25 @@ func syncSwaps() error {
 					}
 
 					pool := poolRepo.FindByPoolID(uint64(swapCreate.PoolId))
-					swapCreate.Fee = calcFee(swapCreate.TokenIn.String(), pool.SwapFee)
+					if pool.SwapFee != "" {
+						swapCreate.Fee = calcFee(swapCreate.TokenIn.String(), pool.SwapFee)
+					}
+
+					btsgIBCDenom := "ibc/4E5444C35610CC76FC94E7F7886B93121175C28262DDFDDE6F84E82BF2425452"
+
+					if swapCreate.TokenIn.Denom == btsgIBCDenom {
+						prices := hrp.FindByAsset("bitsong", tx.Time)
+						if len(prices) > 0 {
+							usdValue := (swapCreate.TokenIn.GetAmount() * 0.000001) * prices[0].GetUsdPrice()
+							swapCreate.UsdValue = fmt.Sprintf("%2f", usdValue)
+						}
+					} else if swapCreate.TokenOut.Denom == btsgIBCDenom {
+						prices := hrp.FindByAsset("bitsong", tx.Time)
+						if len(prices) > 0 {
+							usdValue := (swapCreate.TokenOut.GetAmount() * 0.000001) * prices[0].GetUsdPrice()
+							swapCreate.UsdValue = fmt.Sprintf("%2f", usdValue)
+						}
+					}
 
 					_, err := swapRepo.Create(swapCreate)
 
