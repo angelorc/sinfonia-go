@@ -109,8 +109,8 @@ func syncLiquidityEvents() error {
 					Height:    tx.Height,
 					TxHash:    tx.Hash,
 					Sender:    "",
-					TokensIn:  nil,
-					TokensOut: nil,
+					TokensIn:  []modelv2.Coin{},
+					TokensOut: []modelv2.Coin{},
 					Time:      tx.Time,
 				}
 
