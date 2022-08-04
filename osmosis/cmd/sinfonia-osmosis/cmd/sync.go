@@ -14,6 +14,7 @@ import (
 	gammtypes "github.com/osmosis-labs/osmosis/v9/x/gamm/types"
 	"github.com/osmosis-labs/osmosis/v9/x/incentives/types"
 	"github.com/spf13/cobra"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
 	"math"
@@ -35,6 +36,7 @@ func GetSyncCmd() *cobra.Command {
 		GetSyncIncentivesCmd(),
 		GetSyncPricesCmd(),
 		GetSyncHistoricalPricesCmd(),
+		GetSyncLiquidityEventsCmd(),
 	)
 
 	return cmd
@@ -154,7 +156,10 @@ func syncSwaps() error {
 			continue
 		}
 
-		txs, err := txRepo.FindEventsByType("token_swapped", fromBlock, toBlock)
+		events := []bson.M{
+			{"event.type": "token_swapped"},
+		}
+		txs, err := txRepo.FindEventsByTypes(events, fromBlock, toBlock)
 		log.Printf("Scanning blocks from %d to %d, %d txs founds, batch %d/%d\n", fromBlock, toBlock, len(txs), i, batches)
 
 		if err != nil {
@@ -418,7 +423,10 @@ func syncPools(client *chain.Client) error {
 		}
 
 		log.Printf("Querying blocks from %d to %d", fromBlock, toBlock)
-		txs, err := txRepo.FindEventsByType("pool_created", fromBlock, toBlock)
+		events := []bson.M{
+			{"event.type": "pool_created"},
+		}
+		txs, err := txRepo.FindEventsByTypes(events, fromBlock, toBlock)
 		log.Printf("Scanning blocks from %d to %d, %d txs founds, batch %d/%d\n", fromBlock, toBlock, len(txs), i, batches)
 
 		if err != nil {

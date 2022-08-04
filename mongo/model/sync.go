@@ -30,6 +30,7 @@ type Sync struct {
 	Pools            int64              `json:"pools" bson:"pools"`
 	Swaps            int64              `json:"swaps" bson:"swaps"`
 	Incentives       int64              `json:"incentives" bson:"incentives"`
+	LiquidityEvents  int64              `json:"liquidity_events" bson:"liquidity_events"`
 }
 
 /**

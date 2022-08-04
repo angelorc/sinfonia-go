@@ -32,7 +32,7 @@ type TransactionRepository interface {
 
 	FindByID(id primitive.ObjectID) *modelv2.Transaction
 	FindByHash(hash string) *modelv2.Transaction
-	FindEventsByType(evtType string, fromBlock, toBlock int64) ([]*modelv2.TransactionEvents, error)
+	FindEventsByTypes(fields []bson.M, fromBlock, toBlock int64) ([]*modelv2.TransactionEvents, error)
 
 	Create(data *modelv2.TransactionCreateReq) (*modelv2.Transaction, error)
 }
@@ -153,7 +153,7 @@ func (b *transactionRepository) EnsureIndexes() (string, error) {
 	return b.collection.Indexes().CreateOne(b.context, index)
 }
 
-func (e *transactionRepository) FindEventsByType(evtType string, fromBlock, toBlock int64) ([]*modelv2.TransactionEvents, error) {
+func (e *transactionRepository) FindEventsByTypes(fields []bson.M, fromBlock, toBlock int64) ([]*modelv2.TransactionEvents, error) {
 	var txEvents []*modelv2.TransactionEvents
 
 	pipeline := []bson.M{
@@ -169,7 +169,7 @@ func (e *transactionRepository) FindEventsByType(evtType string, fromBlock, toBl
 					"$gte": fromBlock,
 					"$lte": toBlock,
 				},
-				"events.type": evtType,
+				"$or": fields,
 			},
 		},
 		{
