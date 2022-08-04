@@ -106,6 +106,10 @@ func GetIndexerParserCmd() *cobra.Command {
 					return err
 				}
 
+				if err := syncLiquidityEvents(); err != nil {
+					return err
+				}
+
 				if err := syncSwaps(); err != nil {
 					return err
 				}

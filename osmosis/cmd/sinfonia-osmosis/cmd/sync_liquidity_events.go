@@ -43,7 +43,7 @@ func GetSyncLiquidityEventsCmd() *cobra.Command {
 			defaultDB.Init()
 			defer defaultDB.Disconnect()
 
-			if err := syncLiquidityAdd(); err != nil {
+			if err := syncLiquidityEvents(); err != nil {
 				return err
 			}
 
@@ -56,7 +56,7 @@ func GetSyncLiquidityEventsCmd() *cobra.Command {
 	return cmd
 }
 
-func syncLiquidityAdd() error {
+func syncLiquidityEvents() error {
 	// get last available height on db
 	lastBlock := model.GetLastHeight("osmosis-1")
 	// TODO: get first available block
@@ -130,7 +130,7 @@ func syncLiquidityAdd() error {
 					}
 				}
 
-				log.Printf("PoolID: %d, TokensIn: %s, TokensOut: %s", evtCreate.PoolID, evtCreate.TokensIn, evtCreate.TokensOut)
+				// log.Printf("PoolID: %d, TokensIn: %s, TokensOut: %s", evtCreate.PoolID, evtCreate.TokensIn, evtCreate.TokensOut)
 				_, err := liquidityRepo.Create(evtCreate)
 
 				if err != nil {
@@ -150,9 +150,9 @@ func syncLiquidityAdd() error {
 
 	// update sync with last synced height
 	sync.LiquidityEvents = lastBlock
-	/*if err := sync.Save(); err != nil {
+	if err := sync.Save(); err != nil {
 		return err
-	}*/
+	}
 
 	fmt.Printf("liquidity events synced to block %d", sync.LiquidityEvents)
 
