@@ -130,40 +130,12 @@ func syncLiquidityAdd() error {
 					}
 				}
 
-				// TODO: allow all pools
-				isAllowedPool := false
-				allowedPools := []uint64{
-					573, // OSMO
-					574, // ATOM
-					751, // CLAY
-					756, // RWNE
-					757, // ENMODA
-					758, // 404DR
-					759, // N43
-					760, // LOBO
-					761, // VIBRA
-					762, // KARINA
-					763, // TESTA
-					764, // CMQZ
-					765, // FASANO
-					766, // D9X
-					767, // FONTI
-					768, // BJKS
-				}
-				for _, id := range allowedPools {
-					if evtCreate.PoolID == id {
-						isAllowedPool = true
-					}
-				}
+				log.Printf("PoolID: %d, TokensIn: %s, TokensOut: %s", evtCreate.PoolID, evtCreate.TokensIn, evtCreate.TokensOut)
+				_, err := liquidityRepo.Create(evtCreate)
 
-				if isAllowedPool {
-					log.Printf("PoolID: %d, TokensIn: %s, TokensOut: %s", evtCreate.PoolID, evtCreate.TokensIn, evtCreate.TokensOut)
-					_, err := liquidityRepo.Create(evtCreate)
-
-					if err != nil {
-						if !strings.Contains(err.Error(), "E11000 duplicate key error") {
-							log.Fatalf("Failed to write liquidity event to db. Err: %s", err.Error())
-						}
+				if err != nil {
+					if !strings.Contains(err.Error(), "E11000 duplicate key error") {
+						log.Fatalf("Failed to write liquidity event to db. Err: %s", err.Error())
 					}
 				}
 			}
