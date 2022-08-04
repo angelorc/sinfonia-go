@@ -119,16 +119,16 @@ func (e *historicalPriceRepository) FindByAsset(asset string, time time.Time) []
 
 	pipeline := []bson.M{
 		{
-			"$match": bson.M{
-				"asset": asset,
-				"time": bson.M{
-					"$gte": time,
-				},
+			"$sort": bson.M{
+				"time": 1,
 			},
 		},
 		{
-			"$sort": bson.M{
-				"time": 1,
+			"$match": bson.M{
+				"asset": asset,
+				"time": bson.M{
+					"$lte": time,
+				},
 			},
 		},
 		{

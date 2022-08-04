@@ -157,7 +157,7 @@ func syncSwaps() error {
 		}
 
 		events := []bson.M{
-			{"event.type": "token_swapped"},
+			{"events.type": "token_swapped"},
 		}
 		txs, err := txRepo.FindEventsByTypes(events, fromBlock, toBlock)
 		log.Printf("Scanning blocks from %d to %d, %d txs founds, batch %d/%d\n", fromBlock, toBlock, len(txs), i, batches)
@@ -208,6 +208,18 @@ func syncSwaps() error {
 						if len(prices) > 0 {
 							usdValue := (swapCreate.TokenIn.GetAmount() * 0.000001) * prices[0].GetUsdPrice()
 							swapCreate.UsdValue = fmt.Sprintf("%2f", usdValue)
+
+							assetPrice := usdValue / (swapCreate.TokenOut.GetAmount() * 0.000001)
+							log.Printf("asset: %s, price: %2f", swapCreate.TokenOut.Denom, assetPrice)
+							id, _ := hrp.Create(&modelv2.HistoricalPriceCreateReq{
+								Asset: swapCreate.TokenOut.Denom,
+								Price: []modelv2.Price{
+									{Usd: fmt.Sprintf("%2f", assetPrice)},
+								},
+								Time: tx.Time,
+							})
+							log.Printf("op_id: %s, tx_id: %s", id.String(), tx.ID.String())
+
 						} else {
 							log.Fatalf("price not found %s", tx.Time.String())
 						}
@@ -216,6 +228,17 @@ func syncSwaps() error {
 						if len(prices) > 0 {
 							usdValue := (swapCreate.TokenOut.GetAmount() * 0.000001) * prices[0].GetUsdPrice()
 							swapCreate.UsdValue = fmt.Sprintf("%2f", usdValue)
+
+							assetPrice := usdValue / (swapCreate.TokenIn.GetAmount() * 0.000001)
+							log.Printf("asset: %s, price: %2f", swapCreate.TokenIn.Denom, assetPrice)
+							id, _ := hrp.Create(&modelv2.HistoricalPriceCreateReq{
+								Asset: swapCreate.TokenIn.Denom,
+								Price: []modelv2.Price{
+									{Usd: fmt.Sprintf("%2f", assetPrice)},
+								},
+								Time: tx.Time,
+							})
+							log.Printf("op_id: %s, tx_id: %s", id.String(), tx.ID.String())
 						} else {
 							log.Fatalf("price not found %s", tx.Time.String())
 						}
@@ -242,9 +265,9 @@ func syncSwaps() error {
 
 	// update sync with last synced height
 	sync.Swaps = lastBlock
-	if err := sync.Save(); err != nil {
+	/*if err := sync.Save(); err != nil {
 		return err
-	}
+	}*/
 
 	fmt.Printf("swaps synced to block %d", sync.Swaps)
 
