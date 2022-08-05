@@ -306,7 +306,9 @@ func syncPools(client *chain.Client) error {
 				}*/
 
 				if err != nil {
-					log.Fatalf("Failed to write swap to db. Err: %s", err.Error())
+					if !strings.Contains(err.Error(), "E11000 duplicate key error") {
+						log.Fatalf("Failed to write pool to db. Err: %s", err.Error())
+					}
 				}
 
 			}
