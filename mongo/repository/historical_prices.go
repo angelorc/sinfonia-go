@@ -34,6 +34,7 @@ type HistoricalPriceRepository interface {
 	FindByAsset(asset string, time time.Time) []*modelv2.HistoricalPrice
 
 	Create(data *modelv2.HistoricalPriceCreateReq) (*primitive.ObjectID, error)
+	InsertMany(records []interface{}) (*mongo.InsertManyResult, error)
 }
 
 func NewHistoricalPriceRepository() HistoricalPriceRepository {
@@ -51,6 +52,10 @@ func NewHistoricalPriceRepository() HistoricalPriceRepository {
 	repo.EnsureIndexes()
 
 	return repo
+}
+
+func (e *historicalPriceRepository) InsertMany(records []interface{}) (*mongo.InsertManyResult, error) {
+	return e.collection.InsertMany(e.context, records)
 }
 
 func (e *historicalPriceRepository) Count(filter *modelv2.HistoricalPriceFilter) (int64, error) {

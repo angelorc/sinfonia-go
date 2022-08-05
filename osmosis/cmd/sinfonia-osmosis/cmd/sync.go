@@ -138,6 +138,7 @@ func syncSwaps() error {
 
 	txRepo := repository.NewTransactionRepository()
 	swapRepo := repository.NewSwapRepository()
+	swapRepo.EnsureIndexes()
 	poolRepo := repository.NewPoolRepository()
 	hpr := repository.NewHistoricalPriceRepository()
 
@@ -163,12 +164,16 @@ func syncSwaps() error {
 			log.Fatalf("Failed to find events. Err: %s", err.Error())
 		}
 
+		swapCreateBatch := make([]interface{}, 0)
+		historyCreateBatch := make([]interface{}, 0)
+
 		for _, tx := range txs {
 			for _, evt := range tx.Events {
 				groupedAttrs := chunkSlice(evt.Attributes, 5)
 
 				for _, attrs := range groupedAttrs {
 					swapCreate := &modelv2.SwapCreateReq{
+						ID:         primitive.NewObjectID(),
 						ChainID:    tx.ChainID,
 						Height:     tx.Height,
 						TxHash:     tx.Hash,
@@ -228,23 +233,24 @@ func syncSwaps() error {
 						}
 
 						// save swap
-						_, err := swapRepo.Create(swapCreate)
+						swapCreateBatch = append(swapCreateBatch, swapCreate)
+						/*_, err := swapRepo.Create(swapCreate)
 
 						if err != nil {
 							if !strings.Contains(err.Error(), "E11000 duplicate key error") {
 								log.Fatalf("Failed to write swap to db. Err: %s", err.Error())
 							}
-						}
+						}*/
 
 						price := swapCreate.UsdValue / (swapCreate.TokenIn.Amount * 0.000001)
-						hpr.Create(&modelv2.HistoricalPriceCreateReq{
+						historyCreateBatch = append(historyCreateBatch, &modelv2.HistoricalPriceCreateReq{
 							Asset: swapCreate.TokenIn.Denom,
 							Price: price,
 							Time:  tx.Time,
 						})
 
 						price = swapCreate.UsdValue / (swapCreate.TokenOut.Amount * 0.000001)
-						hpr.Create(&modelv2.HistoricalPriceCreateReq{
+						historyCreateBatch = append(historyCreateBatch, &modelv2.HistoricalPriceCreateReq{
 							Asset: swapCreate.TokenOut.Denom,
 							Price: price,
 							Time:  tx.Time,
@@ -254,17 +260,33 @@ func syncSwaps() error {
 			}
 		}
 
+		if len(swapCreateBatch) > 0 {
+			res, err := swapRepo.InsertMany(swapCreateBatch)
+			if err != nil {
+				log.Fatalf("Failed to write swap to db. Err: %s", err.Error())
+			}
+			log.Printf("inserted swaps: %d", len(res.InsertedIDs))
+			swapCreateBatch = make([]interface{}, 0)
+
+			// update sync with last synced height
+			sync.Swaps = toBlock
+			if err := sync.Save(); err != nil {
+				return err
+			}
+
+			res, err = hpr.InsertMany(historyCreateBatch)
+			if err != nil {
+				log.Fatalf("Failed to write history swap to db. Err: %s", err.Error())
+			}
+			log.Printf("inserted history record: %d", len(res.InsertedIDs))
+			historyCreateBatch = make([]interface{}, 0)
+		}
+
 		fromBlock = toBlock + 1
 		toBlock = fromBlock + int64(limit)
 		if toBlock > lastBlock {
 			toBlock = lastBlock
 		}
-	}
-
-	// update sync with last synced height
-	sync.Swaps = lastBlock
-	if err := sync.Save(); err != nil {
-		return err
 	}
 
 	fmt.Printf("swaps synced to block %d", sync.Swaps)

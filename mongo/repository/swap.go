@@ -34,6 +34,7 @@ type SwapRepository interface {
 	FindByHeight(height int64) *modelv2.Swap
 
 	Create(data *modelv2.SwapCreateReq) (*primitive.ObjectID, error)
+	InsertMany(records []interface{}) (*mongo.InsertManyResult, error)
 }
 
 func NewSwapRepository() SwapRepository {
@@ -126,6 +127,10 @@ func (e *swapRepository) Create(data *modelv2.SwapCreateReq) (*primitive.ObjectI
 	}
 
 	return &insertedID, nil
+}
+
+func (e *swapRepository) InsertMany(records []interface{}) (*mongo.InsertManyResult, error) {
+	return e.collection.InsertMany(e.context, records)
 }
 
 func (e *swapRepository) EnsureIndexes() (string, error) {

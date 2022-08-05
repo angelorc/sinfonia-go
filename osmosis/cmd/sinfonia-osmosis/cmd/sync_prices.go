@@ -65,7 +65,7 @@ func GetSyncPricesCmd() *cobra.Command {
 					_, err = hpr.Create(&modelv2.HistoricalPriceCreateReq{
 						Asset: v,
 						Price: price[1],
-						Time:  time.Unix(int64(price[0]/1000), 0),
+						Time:  time.Unix(int64(price[0]/1000), 0).UTC(),
 					})
 
 					if err != nil {
