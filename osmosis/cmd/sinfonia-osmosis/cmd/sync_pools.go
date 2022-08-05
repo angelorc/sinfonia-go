@@ -224,7 +224,7 @@ func syncPools(client *chain.Client) error {
 
 		log.Printf("Querying blocks from %d to %d", fromBlock, toBlock)
 		events := []bson.M{
-			{"event.type": "pool_created"},
+			{"events.type": "pool_created"},
 		}
 		txs, err := txRepo.FindEventsByTypes(events, fromBlock, toBlock)
 		log.Printf("Scanning blocks from %d to %d, %d txs founds, batch %d/%d\n", fromBlock, toBlock, len(txs), i, batches)
