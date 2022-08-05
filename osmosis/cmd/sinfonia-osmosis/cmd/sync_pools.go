@@ -241,6 +241,7 @@ func syncPools(client *chain.Client) error {
 				if err != nil {
 					return fmt.Errorf("error while parsing poolID, err: %s", err.Error())
 				}
+				log.Printf("pool_id %d", poolID)
 
 				poolRes, err := client.QueryPoolByID(poolID)
 				if err != nil {
@@ -306,9 +307,7 @@ func syncPools(client *chain.Client) error {
 				}*/
 
 				if err != nil {
-					if !strings.Contains(err.Error(), "E11000 duplicate key error") {
-						log.Fatalf("Failed to write pool to db. Err: %s", err.Error())
-					}
+					log.Printf("Failed to write pool to db. Err: %s", err.Error())
 				}
 
 			}
