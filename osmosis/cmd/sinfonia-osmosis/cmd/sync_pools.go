@@ -210,7 +210,7 @@ func syncPools(client *chain.Client) error {
 	poolRepo := repository.NewPoolRepository()
 	// historicalLiqRepo := repository.NewHistoricalLiquidityRepository()
 
-	limit := 500
+	limit := 10000
 	fromBlock := sync.Pools + 1
 	toBlock := fromBlock + int64(limit)
 	batches := int(math.Ceil(float64(lastBlock-fromBlock) / float64(limit)))
