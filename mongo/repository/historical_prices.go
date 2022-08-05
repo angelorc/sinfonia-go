@@ -43,8 +43,9 @@ func NewHistoricalPriceRepository() HistoricalPriceRepository {
 
 	tsOpts := options.TimeSeries().SetTimeField("time")
 	tsOpts.SetGranularity("seconds")
+	tsOpts.SetMetaField("asset")
 	opts := options.CreateCollection().SetTimeSeriesOptions(tsOpts)
-	db.GetDB(swapDbRefName).CreateCollection(ctx, swapCollectionName, opts)
+	db.GetDB(historicalPricesDbRefName).CreateCollection(ctx, historicalPricesCollectionName, opts)
 
 	repo := &historicalPriceRepository{context: ctx, collection: coll}
 	repo.EnsureIndexes()
