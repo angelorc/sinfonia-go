@@ -289,7 +289,7 @@ func syncPools(client *chain.Client) error {
 					ChainID:    "osmosis-1",
 					Height:     tx.Height,
 					TxHash:     tx.Hash,
-					PoolID:     uint64(i),
+					PoolID:     poolID,
 					PoolAssets: convertPoolAssetsToModel(pool.GetAllPoolAssets()),
 					SwapFee:    pool.GetSwapFee(sdk.Context{}).MustFloat64(),
 					ExitFee:    pool.GetExitFee(sdk.Context{}).MustFloat64(),
