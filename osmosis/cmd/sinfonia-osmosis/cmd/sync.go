@@ -10,8 +10,6 @@ import (
 	"github.com/angelorc/sinfonia-go/mongo/repository"
 	"github.com/angelorc/sinfonia-go/osmosis/chain"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/osmosis-labs/osmosis/v9/x/gamm/pool-models/balancer"
-	gammtypes "github.com/osmosis-labs/osmosis/v9/x/gamm/types"
 	"github.com/osmosis-labs/osmosis/v9/x/incentives/types"
 	"github.com/spf13/cobra"
 	"go.mongodb.org/mongo-driver/bson"
@@ -103,7 +101,7 @@ func chunkSlice(slice []modelv2.Attribute, chunkSize int) [][]modelv2.Attribute 
 
 func convertCoinToCoinModel(coin sdk.Coin) modelv2.Coin {
 	return modelv2.Coin{
-		Amount: coin.Amount.String(),
+		Amount: coin.Amount.ToDec().MustFloat64(),
 		Denom:  coin.Denom,
 	}
 }
@@ -140,9 +138,8 @@ func syncSwaps() error {
 
 	txRepo := repository.NewTransactionRepository()
 	swapRepo := repository.NewSwapRepository()
-	swapRepo.EnsureIndexes()
 	poolRepo := repository.NewPoolRepository()
-	hrp := repository.NewHistoricalPriceRepository()
+	hpr := repository.NewHistoricalPriceRepository()
 
 	limit := 2500
 	fromBlock := sync.Swaps + 1
@@ -172,12 +169,14 @@ func syncSwaps() error {
 
 				for _, attrs := range groupedAttrs {
 					swapCreate := &modelv2.SwapCreateReq{
-						ChainID:  tx.ChainID,
-						Height:   tx.Height,
-						TxHash:   tx.Hash,
-						Fee:      modelv2.Coin{},
-						UsdValue: "0",
-						Time:     tx.Time,
+						ChainID:    tx.ChainID,
+						Height:     tx.Height,
+						TxHash:     tx.Hash,
+						Fee:        0,
+						PriceBase:  0,
+						PriceQuote: 0,
+						UsdValue:   0,
+						Time:       tx.Time,
 					}
 
 					for _, attr := range attrs {
@@ -197,61 +196,60 @@ func syncSwaps() error {
 					}
 
 					pool := poolRepo.FindByPoolID(uint64(swapCreate.PoolId))
-					if pool.SwapFee != "" {
+					if pool.SwapFee > 0 {
 						swapCreate.Fee = calcFee(swapCreate.TokenIn.String(), pool.SwapFee)
 					}
 
-					btsgIBCDenom := "ibc/4E5444C35610CC76FC94E7F7886B93121175C28262DDFDDE6F84E82BF2425452"
+					if pool.Tracked {
+						if pool.GetBaseAsset().Denom == swapCreate.TokenIn.Denom {
+							swapCreate.Type = 0 // buy
+						} else {
+							swapCreate.Type = 1 // sell
+						}
 
-					if swapCreate.TokenIn.Denom == btsgIBCDenom {
-						prices := hrp.FindByAsset("bitsong", tx.Time)
+						if swapCreate.Type == 0 {
+							swapCreate.PriceBase = swapCreate.TokenIn.Amount / swapCreate.TokenOut.Amount
+							swapCreate.PriceQuote = swapCreate.TokenOut.Amount / swapCreate.TokenIn.Amount
+						} else {
+							swapCreate.PriceBase = swapCreate.TokenOut.Amount / swapCreate.TokenIn.Amount
+							swapCreate.PriceQuote = swapCreate.TokenIn.Amount / swapCreate.TokenOut.Amount
+						}
+
+						// add usd value
+						prices := hpr.FindByAsset(pool.GetQuoteAsset().Denom, tx.Time)
 						if len(prices) > 0 {
-							usdValue := (swapCreate.TokenIn.GetAmount() * 0.000001) * prices[0].GetUsdPrice()
-							swapCreate.UsdValue = fmt.Sprintf("%2f", usdValue)
-
-							assetPrice := usdValue / (swapCreate.TokenOut.GetAmount() * 0.000001)
-							log.Printf("asset: %s, price: %2f", swapCreate.TokenOut.Denom, assetPrice)
-							id, _ := hrp.Create(&modelv2.HistoricalPriceCreateReq{
-								Asset: swapCreate.TokenOut.Denom,
-								Price: []modelv2.Price{
-									{Usd: fmt.Sprintf("%2f", assetPrice)},
-								},
-								Time: tx.Time,
-							})
-							log.Printf("op_id: %s, tx_id: %s", id.String(), tx.ID.String())
-
+							if swapCreate.Type == 0 {
+								swapCreate.UsdValue = (swapCreate.TokenOut.Amount * 0.000001) * prices[0].Price
+							} else {
+								swapCreate.UsdValue = (swapCreate.TokenIn.Amount * 0.000001) * prices[0].Price
+							}
 						} else {
 							log.Fatalf("price not found %s", tx.Time.String())
 						}
-					} else if swapCreate.TokenOut.Denom == btsgIBCDenom {
-						prices := hrp.FindByAsset("bitsong", tx.Time)
-						if len(prices) > 0 {
-							usdValue := (swapCreate.TokenOut.GetAmount() * 0.000001) * prices[0].GetUsdPrice()
-							swapCreate.UsdValue = fmt.Sprintf("%2f", usdValue)
 
-							assetPrice := usdValue / (swapCreate.TokenIn.GetAmount() * 0.000001)
-							log.Printf("asset: %s, price: %2f", swapCreate.TokenIn.Denom, assetPrice)
-							id, _ := hrp.Create(&modelv2.HistoricalPriceCreateReq{
-								Asset: swapCreate.TokenIn.Denom,
-								Price: []modelv2.Price{
-									{Usd: fmt.Sprintf("%2f", assetPrice)},
-								},
-								Time: tx.Time,
-							})
-							log.Printf("op_id: %s, tx_id: %s", id.String(), tx.ID.String())
-						} else {
-							log.Fatalf("price not found %s", tx.Time.String())
+						// save swap
+						_, err := swapRepo.Create(swapCreate)
+
+						if err != nil {
+							if !strings.Contains(err.Error(), "E11000 duplicate key error") {
+								log.Fatalf("Failed to write swap to db. Err: %s", err.Error())
+							}
 						}
+
+						price := swapCreate.UsdValue / (swapCreate.TokenIn.Amount * 0.000001)
+						hpr.Create(&modelv2.HistoricalPriceCreateReq{
+							Asset: swapCreate.TokenIn.Denom,
+							Price: price,
+							Time:  tx.Time,
+						})
+
+						price = swapCreate.UsdValue / (swapCreate.TokenOut.Amount * 0.000001)
+						hpr.Create(&modelv2.HistoricalPriceCreateReq{
+							Asset: swapCreate.TokenOut.Denom,
+							Price: price,
+							Time:  tx.Time,
+						})
 					}
-
-					_, err := swapRepo.Create(swapCreate)
-
-					if err != nil {
-						if !strings.Contains(err.Error(), "E11000 duplicate key error") {
-							log.Fatalf("Failed to write swap to db. Err: %s", err.Error())
-						}
-					}
-
 				}
 			}
 		}
@@ -265,269 +263,21 @@ func syncSwaps() error {
 
 	// update sync with last synced height
 	sync.Swaps = lastBlock
-	/*if err := sync.Save(); err != nil {
+	if err := sync.Save(); err != nil {
 		return err
-	}*/
+	}
 
 	fmt.Printf("swaps synced to block %d", sync.Swaps)
 
 	return nil
 }
 
-func calcFee(tokenInStr, swapFeeStr string) modelv2.Coin {
+func calcFee(tokenInStr string, swapFee float64) float64 {
 	tokenIn, _ := sdk.ParseCoinNormalized(tokenInStr)
-	swapFee, _ := sdk.NewDecFromStr(swapFeeStr)
-	tokenInAfterFee := tokenIn.Amount.ToDec().Mul(sdk.OneDec().Sub(swapFee)).TruncateInt()
+	swapFeeDec := sdk.MustNewDecFromStr(fmt.Sprintf("%f", swapFee))
+	tokenInAfterFee := tokenIn.Amount.ToDec().Mul(sdk.OneDec().Sub(swapFeeDec)).TruncateInt()
 
-	return modelv2.Coin{
-		Denom:  tokenIn.Denom,
-		Amount: tokenIn.Amount.Sub(tokenInAfterFee).String(),
-	}
-}
-
-func GetSyncPoolCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "pools",
-		Short:   "sync pools from latest blocks",
-		Example: "sinfonia-osmosis sync pools --mongo-dbname sinfonia-test",
-		Args:    cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cfgPath, err := cmd.Flags().GetString(flagConfig)
-			if err != nil {
-				return err
-			}
-
-			cfg, err := config.NewConfig(cfgPath)
-			if err != nil {
-				return err
-			}
-
-			defaultDB := db.Database{
-				DataBaseRefName: "default",
-				URL:             cfg.Mongo.Uri,
-				DataBaseName:    cfg.Mongo.DbName,
-				RetryWrites:     strconv.FormatBool(cfg.Mongo.Retry),
-			}
-			defaultDB.Init()
-			defer defaultDB.Disconnect()
-
-			client, err := chain.NewClient(&cfg.Osmosis)
-			if err != nil {
-				return fmt.Errorf("failed to get RPC endpoints on chain %s. err: %v", "osmosis", err)
-			}
-
-			if err := syncPools(client); err != nil {
-				return err
-			}
-
-			return nil
-		},
-	}
-
-	addConfigFlag(cmd)
-
-	return cmd
-}
-
-func GetSyncOldPoolCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "old-pools",
-		Short:   "sync old-pools from latest blocks",
-		Example: "sinfonia-osmosis sync old-pools ",
-		Args:    cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cfgPath, err := cmd.Flags().GetString(flagConfig)
-			if err != nil {
-				return err
-			}
-
-			cfg, err := config.NewConfig(cfgPath)
-			if err != nil {
-				return err
-			}
-
-			defaultDB := db.Database{
-				DataBaseRefName: "default",
-				URL:             cfg.Mongo.Uri,
-				DataBaseName:    cfg.Mongo.DbName,
-				RetryWrites:     strconv.FormatBool(cfg.Mongo.Retry),
-			}
-			defaultDB.Init()
-			defer defaultDB.Disconnect()
-
-			client, err := chain.NewClient(&cfg.Osmosis)
-			if err != nil {
-				return fmt.Errorf("failed to get RPC endpoints on chain %s. err: %v", "osmosis", err)
-			}
-
-			poolRepo := repository.NewPoolRepository()
-			poolRepo.EnsureIndexes()
-			if err != nil {
-				return err
-			}
-
-			// import only the first 750 pools, new pools will be imported with the cmd `sync pools`
-			for i := 1; i <= 750; i++ {
-				poolRes, err := client.QueryPoolByID(uint64(i))
-				if err != nil {
-					return fmt.Errorf("error while fetching poolID, err: %s", err.Error())
-				}
-
-				var poolI gammtypes.PoolI
-				err = client.Codec.Marshaler.UnpackAny(poolRes.GetPool(), &poolI)
-				if err != nil {
-					log.Fatalf("error while decoding the new pool")
-				}
-
-				pool, ok := poolI.(*balancer.Pool)
-				if !ok {
-					log.Fatalf("error while decoding the new pool")
-				}
-
-				_, err = poolRepo.Create(&modelv2.PoolCreateReq{
-					ChainID:    "osmosis-1",
-					Height:     0,
-					TxHash:     "",
-					PoolID:     uint64(i),
-					PoolAssets: convertPoolAssetsToModel(pool.GetAllPoolAssets()),
-					SwapFee:    pool.GetSwapFee(sdk.Context{}).String(),
-					ExitFee:    pool.GetExitFee(sdk.Context{}).String(),
-					Time:       time.Time{},
-				})
-
-				if err != nil {
-					if !strings.Contains(err.Error(), "E11000 duplicate key error") {
-						log.Fatalf("Failed to write pool to db. Err: %s", err.Error())
-					}
-				}
-			}
-
-			return nil
-		},
-	}
-
-	addConfigFlag(cmd)
-
-	return cmd
-}
-
-func syncPools(client *chain.Client) error {
-	// get last available height on db
-	lastBlock := model.GetLastHeight("osmosis-1")
-	// TODO: get first available block
-	defaultBlock := 5112889
-
-	// get last block synced from account
-	sync := new(model.Sync)
-	sync.One()
-
-	if sync.ID.IsZero() {
-		sync.ID = primitive.NewObjectID()
-		sync.Pools = int64(defaultBlock)
-	}
-
-	if sync.Pools < int64(defaultBlock) {
-		sync.Pools = int64(defaultBlock)
-	}
-
-	txRepo := repository.NewTransactionRepository()
-	poolRepo := repository.NewPoolRepository()
-
-	limit := 500
-	fromBlock := sync.Pools + 1
-	toBlock := fromBlock + int64(limit)
-	batches := int(math.Ceil(float64(lastBlock-fromBlock) / float64(limit)))
-
-	log.Printf("Scanning blocks from %d to %d, batches %d, first end block %d\n", fromBlock, lastBlock, batches, toBlock)
-
-	for i := 1; i <= batches; i++ {
-		if fromBlock > toBlock {
-			continue
-		}
-
-		log.Printf("Querying blocks from %d to %d", fromBlock, toBlock)
-		events := []bson.M{
-			{"event.type": "pool_created"},
-		}
-		txs, err := txRepo.FindEventsByTypes(events, fromBlock, toBlock)
-		log.Printf("Scanning blocks from %d to %d, %d txs founds, batch %d/%d\n", fromBlock, toBlock, len(txs), i, batches)
-
-		if err != nil {
-			log.Fatalf("Failed to find events. Err: %s", err.Error())
-		}
-
-		for _, tx := range txs {
-			log.Printf("found %d events", len(tx.Events))
-
-			for _, evt := range tx.Events {
-				poolID, err := strconv.ParseUint(evt.Attributes[0].Value, 0, 64)
-				if err != nil {
-					return fmt.Errorf("error while parsing poolID, err: %s", err.Error())
-				}
-
-				poolRes, err := client.QueryPoolByID(poolID)
-				if err != nil {
-					return fmt.Errorf("error while fetching poolID, err: %s", err.Error())
-				}
-
-				var poolI gammtypes.PoolI
-				err = client.Codec.Marshaler.UnpackAny(poolRes.GetPool(), &poolI)
-				if err != nil {
-					log.Fatalf("error while decoding the new pool")
-				}
-
-				pool, ok := poolI.(*balancer.Pool)
-				if !ok {
-					log.Fatalf("error while decoding the new pool")
-				}
-
-				_, err = poolRepo.Create(&modelv2.PoolCreateReq{
-					ChainID:    tx.ChainID,
-					Height:     tx.Height,
-					TxHash:     tx.Hash,
-					PoolID:     poolID,
-					PoolAssets: convertPoolAssetsToModel(pool.GetAllPoolAssets()),
-					SwapFee:    pool.GetSwapFee(sdk.Context{}).String(),
-					ExitFee:    pool.GetExitFee(sdk.Context{}).String(),
-					Time:       tx.Time,
-				})
-
-				if err != nil {
-					log.Fatalf("Failed to write swap to db. Err: %s", err.Error())
-				}
-
-			}
-		}
-
-		fromBlock = toBlock + 1
-		toBlock = fromBlock + int64(limit)
-		if toBlock > lastBlock {
-			toBlock = lastBlock
-		}
-	}
-
-	// update sync with last synced height
-	sync.Pools = lastBlock
-	if err := sync.Save(); err != nil {
-		return err
-	}
-
-	fmt.Printf("pools synced to block %d", sync.Pools)
-
-	return nil
-}
-
-func convertPoolAssetsToModel(pa []balancer.PoolAsset) []modelv2.PoolAsset {
-	newPoolAssets := make([]modelv2.PoolAsset, len(pa))
-
-	for i, p := range pa {
-		newPoolAssets[i] = modelv2.PoolAsset{
-			Token:  modelv2.Coin{Denom: p.Token.Denom, Amount: p.Token.Amount.String()},
-			Weight: p.Weight.String(),
-		}
-	}
-
-	return newPoolAssets
+	return tokenIn.Amount.Sub(tokenInAfterFee).ToDec().MustFloat64()
 }
 
 func calcVolumeUSD(tokensIn, tokensOut string, ts time.Time) float64 {

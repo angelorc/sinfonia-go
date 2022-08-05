@@ -37,11 +37,21 @@ type SwapRepository interface {
 }
 
 func NewSwapRepository() SwapRepository {
-	coll := db.GetCollection(swapCollectionName, swapDbRefName)
+	// TODO: improve the logic on create and ensure index
 	ctx, _ := context.WithTimeout(context.Background(), 3000*time.Second)
 	//defer cancel()
 
-	return &swapRepository{context: ctx, collection: coll}
+	tsOpts := options.TimeSeries().SetTimeField("time")
+	tsOpts.SetGranularity("seconds")
+	opts := options.CreateCollection().SetTimeSeriesOptions(tsOpts)
+	db.GetDB(swapDbRefName).CreateCollection(ctx, swapCollectionName, opts)
+
+	coll := db.GetCollection(swapCollectionName, swapDbRefName)
+	swapRepo := &swapRepository{context: ctx, collection: coll}
+
+	swapRepo.EnsureIndexes()
+
+	return swapRepo
 }
 
 func (e *swapRepository) FindOne(filter *modelv2.SwapFilter) *modelv2.Swap {

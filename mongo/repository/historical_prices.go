@@ -31,7 +31,7 @@ type HistoricalPriceRepository interface {
 	EnsureIndexes() (string, error)
 
 	FindByID(id primitive.ObjectID) *modelv2.HistoricalPrice
-	FindByAsset(asset string, time time.Time) []*modelv2.Price
+	FindByAsset(asset string, time time.Time) []*modelv2.HistoricalPrice
 
 	Create(data *modelv2.HistoricalPriceCreateReq) (*primitive.ObjectID, error)
 }
@@ -41,7 +41,15 @@ func NewHistoricalPriceRepository() HistoricalPriceRepository {
 	ctx, _ := context.WithTimeout(context.Background(), 3000*time.Second)
 	//defer cancel()
 
-	return &historicalPriceRepository{context: ctx, collection: coll}
+	tsOpts := options.TimeSeries().SetTimeField("time")
+	tsOpts.SetGranularity("seconds")
+	opts := options.CreateCollection().SetTimeSeriesOptions(tsOpts)
+	db.GetDB(swapDbRefName).CreateCollection(ctx, swapCollectionName, opts)
+
+	repo := &historicalPriceRepository{context: ctx, collection: coll}
+	repo.EnsureIndexes()
+
+	return repo
 }
 
 func (e *historicalPriceRepository) Count(filter *modelv2.HistoricalPriceFilter) (int64, error) {
@@ -107,6 +115,25 @@ func (e *historicalPriceRepository) EnsureIndexes() (string, error) {
 		Options: options.Index().SetUnique(false),
 	}
 
+	e.collection.Indexes().CreateOne(e.context, index)
+
+	index = mongo.IndexModel{
+		Keys: bson.D{
+			{"time", -1},
+		},
+		Options: options.Index().SetUnique(false),
+	}
+
+	e.collection.Indexes().CreateOne(e.context, index)
+
+	index = mongo.IndexModel{
+		Keys: bson.D{
+			{"asset", 1},
+			{"time", -1},
+		},
+		Options: options.Index().SetUnique(true),
+	}
+
 	return e.collection.Indexes().CreateOne(e.context, index)
 }
 
@@ -114,13 +141,13 @@ func (e *historicalPriceRepository) FindByID(id primitive.ObjectID) *modelv2.His
 	return e.FindOne(&modelv2.HistoricalPriceFilter{Id: &id})
 }
 
-func (e *historicalPriceRepository) FindByAsset(asset string, time time.Time) []*modelv2.Price {
-	var prices []*modelv2.Price
+func (e *historicalPriceRepository) FindByAsset(asset string, time time.Time) []*modelv2.HistoricalPrice {
+	var prices []*modelv2.HistoricalPrice
 
 	pipeline := []bson.M{
 		{
 			"$sort": bson.M{
-				"time": 1,
+				"time": -1,
 			},
 		},
 		{
@@ -136,10 +163,8 @@ func (e *historicalPriceRepository) FindByAsset(asset string, time time.Time) []
 		},
 		{
 			"$project": bson.M{
-				"_id": 0,
-				"usd": bson.M{
-					"$first": "$price.usd",
-				},
+				"_id":   0,
+				"price": 1,
 			},
 		},
 	}

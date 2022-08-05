@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/angelorc/sinfonia-go/config"
 	"github.com/angelorc/sinfonia-go/mongo/db"
 	"github.com/angelorc/sinfonia-go/mongo/modelv2"
@@ -10,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -40,36 +40,44 @@ func GetSyncPricesCmd() *cobra.Command {
 			defer defaultDB.Disconnect()
 
 			hpr := repository.NewHistoricalPriceRepository()
-			hpr.EnsureIndexes()
 
-			assets := []string{
-				"osmosis", "cosmos", "bitsong",
+			assets := map[string]string{
+				"osmosis": "uosmo",
+				"cosmos":  "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+				"bitsong": "ibc/4E5444C35610CC76FC94E7F7886B93121175C28262DDFDDE6F84E82BF2425452",
 			}
 
-			for _, asset := range assets {
-				log.Printf("getting price for %s from coingecko", asset)
+			startTime := time.Now().Add(-4 * time.Hour)
+			endTime := time.Now()
+
+			log.Printf("getting historical prices from %s to %s", startTime.Format("02-01-2006"), endTime.Format("02-01-2006"))
+
+			for k, v := range assets {
+				log.Printf("getting price for %s from coingecko, time: %s", k, startTime.Format("02-01-2006"))
 
 				// get price
-				price, err := utility.GetCoinPrice(asset, "usd")
+				prices, err := utility.GetHistoricalCoinPrice(k, "usd", startTime, endTime)
 				if err != nil {
 					log.Fatal(err)
 				}
 
-				var prices []modelv2.Price
-				prices = append(prices, modelv2.Price{Usd: fmt.Sprintf("%f", price)})
+				for _, price := range prices {
+					_, err = hpr.Create(&modelv2.HistoricalPriceCreateReq{
+						Asset: v,
+						Price: price[1],
+						Time:  time.Unix(int64(price[0]/1000), 0),
+					})
 
-				_, err = hpr.Create(&modelv2.HistoricalPriceCreateReq{
-					Asset: asset,
-					Price: prices,
-					Time:  time.Now(),
-				})
-				if err != nil {
-					return err
+					if err != nil {
+						if !strings.Contains(err.Error(), "E11000 duplicate key error") {
+							return err
+						}
+					} else {
+						log.Printf("stored price for %s from coingecko, time: %s, price: %2f", k, startTime.Format("02-01-2006"), price)
+					}
 				}
 
-				log.Printf("stored price for %s from coingecko, price: %2f", asset, price)
-
-				time.Sleep(2 * time.Second)
+				time.Sleep(5 * time.Second)
 			}
 
 			return nil

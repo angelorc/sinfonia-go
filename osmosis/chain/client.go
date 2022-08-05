@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	gammtypes "github.com/osmosis-labs/osmosis/v9/x/gamm/types"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 	"regexp"
 
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
@@ -24,6 +25,7 @@ import (
 
 	"github.com/angelorc/sinfonia-go/indexer/types"
 
+	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
 	ibctypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 )
 
@@ -127,6 +129,13 @@ func (c *Client) DecodeTx(tx []byte) (sdk.Tx, error) {
 
 func (c *Client) QueryPoolByID(poolID uint64) (*gammtypes.QueryPoolResponse, error) {
 	return gammtypes.NewQueryClient(c.grpc).Pool(context.Background(), &gammtypes.QueryPoolRequest{PoolId: poolID})
+}
+
+func (c *Client) QueryPoolByIDWithHeight(poolID uint64, height int64) (*gammtypes.QueryPoolResponse, error) {
+	return gammtypes.NewQueryClient(c.grpc).Pool(
+		metadata.AppendToOutgoingContext(context.Background(), grpctypes.GRPCBlockHeightHeader, fmt.Sprintf("%d", height)),
+		&gammtypes.QueryPoolRequest{PoolId: poolID},
+	)
 }
 
 func (c *Client) QueryIBCDenomTrace(hash string) (*ibctypes.QueryDenomTraceResponse, error) {

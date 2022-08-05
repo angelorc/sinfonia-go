@@ -8,7 +8,7 @@ import (
 
 func ConvertCoin(coin sdk.Coin) modelv2.Coin {
 	return modelv2.Coin{
-		Amount: coin.Amount.String(),
+		Amount: coin.Amount.ToDec().MustFloat64(),
 		Denom:  coin.Denom,
 	}
 }

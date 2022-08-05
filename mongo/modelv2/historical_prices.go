@@ -3,23 +3,22 @@ package modelv2
 import (
 	"github.com/angelorc/sinfonia-go/utility"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"strconv"
 	"time"
 )
 
-type Price struct {
+/*type Price struct {
 	Usd string `json:"usd" bson:"usd" validate:"required"`
 }
 
 func (p Price) GetUsdPrice() float64 {
 	price, _ := strconv.ParseFloat(p.Usd, 64)
 	return price
-}
+}*/
 
 type HistoricalPrice struct {
 	ID    primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	Asset string             `json:"asset" bson:"asset" validate:"required"`
-	Price []Price            `json:"price" bson:"price" validate:"required"`
+	Price float64            `json:"price" bson:"price" validate:"required"`
 	Time  time.Time          `json:"time" bson:"time" validate:"required"`
 }
 
@@ -40,7 +39,7 @@ func (bf *HistoricalPriceFilter) Validate() error {
 type HistoricalPriceCreateReq struct {
 	ID    primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	Asset string             `json:"asset" bson:"asset" validate:"required"`
-	Price []Price            `json:"price" bson:"price" validate:"required"`
+	Price float64            `json:"price" bson:"price" validate:"required"`
 	Time  time.Time          `json:"time" bson:"time" validate:"required"`
 }
 
