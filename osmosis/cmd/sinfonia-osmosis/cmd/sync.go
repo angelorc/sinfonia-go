@@ -212,13 +212,13 @@ func syncSwaps() error {
 							swapCreate.Type = 1 // sell
 						}
 
-						if swapCreate.Type == 0 {
+						/*if swapCreate.Type == 0 {
 							swapCreate.PriceBase = swapCreate.TokenIn.Amount / swapCreate.TokenOut.Amount
 							swapCreate.PriceQuote = swapCreate.TokenOut.Amount / swapCreate.TokenIn.Amount
 						} else {
 							swapCreate.PriceBase = swapCreate.TokenOut.Amount / swapCreate.TokenIn.Amount
 							swapCreate.PriceQuote = swapCreate.TokenIn.Amount / swapCreate.TokenOut.Amount
-						}
+						}*/
 
 						// add usd value
 						prices := hpr.FindByAsset(pool.GetQuoteAsset().Denom, tx.Time)
@@ -240,7 +240,7 @@ func syncSwaps() error {
 							if !strings.Contains(err.Error(), "E11000 duplicate key error") {
 								log.Fatalf("Failed to write swap to db. Err: %s", err.Error())
 							}
-						}*/
+						}
 
 						price := swapCreate.UsdValue / (swapCreate.TokenIn.Amount * 0.000001)
 						historyCreateBatch = append(historyCreateBatch, &modelv2.HistoricalPriceCreateReq{
@@ -254,7 +254,7 @@ func syncSwaps() error {
 							Asset: swapCreate.TokenOut.Denom,
 							Price: price,
 							Time:  tx.Time,
-						})
+						})*/
 					}
 				}
 			}
@@ -274,12 +274,12 @@ func syncSwaps() error {
 				return err
 			}
 
-			res, err = hpr.InsertMany(historyCreateBatch)
+			/*res, err = hpr.InsertMany(historyCreateBatch)
 			if err != nil {
 				log.Fatalf("Failed to write history swap to db. Err: %s", err.Error())
 			}
 			log.Printf("inserted history record: %d", len(res.InsertedIDs))
-			historyCreateBatch = make([]interface{}, 0)
+			historyCreateBatch = make([]interface{}, 0)*/
 		}
 
 		fromBlock = toBlock + 1
