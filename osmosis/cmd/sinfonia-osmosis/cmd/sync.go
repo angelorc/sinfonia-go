@@ -165,7 +165,7 @@ func syncSwaps() error {
 		}
 
 		swapCreateBatch := make([]interface{}, 0)
-		historyCreateBatch := make([]interface{}, 0)
+		// historyCreateBatch := make([]interface{}, 0)
 
 		for _, tx := range txs {
 			for _, evt := range tx.Events {
