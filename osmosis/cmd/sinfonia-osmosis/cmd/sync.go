@@ -141,7 +141,7 @@ func syncSwaps() error {
 	poolRepo := repository.NewPoolRepository()
 	hpr := repository.NewHistoricalPriceRepository()
 
-	limit := 500
+	limit := 10000
 	fromBlock := sync.Swaps + 1
 	toBlock := fromBlock + int64(limit)
 	batches := int(math.Ceil(float64(lastBlock-fromBlock) / float64(limit)))
@@ -162,9 +162,6 @@ func syncSwaps() error {
 		if err != nil {
 			log.Fatalf("Failed to find events. Err: %s", err.Error())
 		}
-
-		swapCreateBatch := make([]interface{}, 0)
-		// historyCreateBatch := make([]interface{}, 0)
 
 		for _, tx := range txs {
 			for _, evt := range tx.Events {
@@ -230,8 +227,8 @@ func syncSwaps() error {
 						}
 
 						// save swap
-						swapCreateBatch = append(swapCreateBatch, swapCreate)
-						/*_, err := swapRepo.Create(swapCreate)
+						//swapCreateBatch = append(swapCreateBatch, swapCreate)
+						_, err := swapRepo.Create(swapCreate)
 
 						if err != nil {
 							if !strings.Contains(err.Error(), "E11000 duplicate key error") {
@@ -239,7 +236,7 @@ func syncSwaps() error {
 							}
 						}
 
-						price := swapCreate.UsdValue / (swapCreate.TokenIn.Amount * 0.000001)
+						/*price := swapCreate.UsdValue / (swapCreate.TokenIn.Amount * 0.000001)
 						historyCreateBatch = append(historyCreateBatch, &modelv2.HistoricalPriceCreateReq{
 							Asset: swapCreate.TokenIn.Denom,
 							Price: price,
@@ -257,26 +254,10 @@ func syncSwaps() error {
 			}
 		}
 
-		if len(swapCreateBatch) > 0 {
-			res, err := swapRepo.InsertMany(swapCreateBatch)
-			if err != nil {
-				log.Fatalf("Failed to write swap to db. Err: %s", err.Error())
-			}
-			log.Printf("inserted swaps: %d", len(res.InsertedIDs))
-			swapCreateBatch = make([]interface{}, 0)
-
-			// update sync with last synced height
-			sync.Swaps = toBlock
-			if err := sync.Save(); err != nil {
-				return err
-			}
-
-			/*res, err = hpr.InsertMany(historyCreateBatch)
-			if err != nil {
-				log.Fatalf("Failed to write history swap to db. Err: %s", err.Error())
-			}
-			log.Printf("inserted history record: %d", len(res.InsertedIDs))
-			historyCreateBatch = make([]interface{}, 0)*/
+		// update sync with last synced height
+		sync.Swaps = toBlock
+		if err := sync.Save(); err != nil {
+			return err
 		}
 
 		fromBlock = toBlock + 1
