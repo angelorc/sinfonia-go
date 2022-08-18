@@ -42,10 +42,10 @@ func NewSwapRepository() SwapRepository {
 	ctx, _ := context.WithTimeout(context.Background(), 3000*time.Second)
 	//defer cancel()
 
-	tsOpts := options.TimeSeries().SetTimeField("time")
+	/*tsOpts := options.TimeSeries().SetTimeField("time")
 	tsOpts.SetGranularity("seconds")
 	opts := options.CreateCollection().SetTimeSeriesOptions(tsOpts)
-	db.GetDB(swapDbRefName).CreateCollection(ctx, swapCollectionName, opts)
+	db.GetDB(swapDbRefName).CreateCollection(ctx, swapCollectionName, opts)*/
 
 	coll := db.GetCollection(swapCollectionName, swapDbRefName)
 	swapRepo := &swapRepository{context: ctx, collection: coll}

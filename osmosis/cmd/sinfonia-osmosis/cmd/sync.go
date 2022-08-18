@@ -138,7 +138,6 @@ func syncSwaps() error {
 
 	txRepo := repository.NewTransactionRepository()
 	swapRepo := repository.NewSwapRepository()
-	swapRepo.EnsureIndexes()
 	poolRepo := repository.NewPoolRepository()
 	hpr := repository.NewHistoricalPriceRepository()
 
