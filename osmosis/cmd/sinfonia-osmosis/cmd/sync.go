@@ -172,15 +172,13 @@ func syncSwaps() error {
 
 				for _, attrs := range groupedAttrs {
 					swapCreate := &modelv2.SwapCreateReq{
-						ID:         primitive.NewObjectID(),
-						ChainID:    tx.ChainID,
-						Height:     tx.Height,
-						TxHash:     tx.Hash,
-						Fee:        0,
-						PriceBase:  0,
-						PriceQuote: 0,
-						UsdValue:   0,
-						Time:       tx.Time,
+						ID:       primitive.NewObjectID(),
+						ChainID:  tx.ChainID,
+						Height:   tx.Height,
+						TxHash:   tx.Hash,
+						Fee:      0,
+						UsdValue: 0,
+						Time:     tx.Time,
 					}
 
 					for _, attr := range attrs {

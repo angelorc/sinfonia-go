@@ -12,15 +12,13 @@ type Swap struct {
 	Height  int64              `json:"height" bson:"height" validate:"required"`
 	TxHash  string             `json:"tx_hash" bson:"tx_hash" validate:"required"`
 
-	Account    string  `json:"account" bson:"account" validate:"required"`
-	PoolId     int64   `json:"pool_id" bson:"pool_id" validate:"required"`
-	Type       int     `json:"type" bson:"type"` // 0 - buy, 1 - sell
-	TokenIn    Coin    `json:"token_in" bson:"token_in" validate:"required"`
-	TokenOut   Coin    `json:"token_out" bson:"token_out"`
-	PriceBase  float64 `json:"price_base" bson:"price_base"`
-	PriceQuote float64 `json:"price_quote" bson:"price_quote"`
-	Fee        float64 `json:"fee" bson:"fee"`
-	UsdValue   float64 `json:"usd_value" bson:"usd_value"`
+	Account  string  `json:"account" bson:"account" validate:"required"`
+	PoolId   int64   `json:"pool_id" bson:"pool_id" validate:"required"`
+	Type     int     `json:"type" bson:"type"` // 0 - buy, 1 - sell
+	TokenIn  Coin    `json:"token_in" bson:"token_in" validate:"required"`
+	TokenOut Coin    `json:"token_out" bson:"token_out"`
+	Fee      float64 `json:"fee" bson:"fee"`
+	UsdValue float64 `json:"usd_value" bson:"usd_value"`
 
 	Time time.Time `json:"time" bson:"time" validate:"required"`
 }
@@ -44,15 +42,13 @@ type SwapCreateReq struct {
 	Height  int64              `json:"height" bson:"height" validate:"required"`
 	TxHash  string             `json:"tx_hash" bson:"tx_hash" validate:"required"`
 
-	Account    string  `json:"account" bson:"account" validate:"required"`
-	PoolId     int64   `json:"pool_id" bson:"pool_id" validate:"required"`
-	Type       int     `json:"type" bson:"type"` // 0 - buy, 1 - sell
-	TokenIn    Coin    `json:"token_in" bson:"token_in" validate:"required"`
-	TokenOut   Coin    `json:"token_out" bson:"token_out" validate:"required"`
-	PriceBase  float64 `json:"price_base" bson:"price_base"`
-	PriceQuote float64 `json:"price_quote" bson:"price_quote"`
-	Fee        float64 `json:"fee" bson:"fee"`
-	UsdValue   float64 `json:"usd_value" bson:"usd_value"`
+	Account  string  `json:"account" bson:"account" validate:"required"`
+	PoolId   int64   `json:"pool_id" bson:"pool_id" validate:"required"`
+	Type     int     `json:"type" bson:"type"` // 0 - buy, 1 - sell
+	TokenIn  Coin    `json:"token_in" bson:"token_in" validate:"required"`
+	TokenOut Coin    `json:"token_out" bson:"token_out" validate:"required"`
+	Fee      float64 `json:"fee" bson:"fee"`
+	UsdValue float64 `json:"usd_value" bson:"usd_value"`
 
 	Time time.Time `json:"time" bson:"time" validate:"required"`
 }
