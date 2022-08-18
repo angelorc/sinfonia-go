@@ -215,15 +215,16 @@ func syncSwaps() error {
 						}*/
 
 						// add usd value
+						price := float64(0)
 						prices := hpr.FindByAsset(pool.GetQuoteAsset().Denom, tx.Time)
 						if len(prices) > 0 {
-							if swapCreate.Type == 0 {
-								swapCreate.UsdValue = (swapCreate.TokenOut.Amount * 0.000001) * prices[0].Price
-							} else {
-								swapCreate.UsdValue = (swapCreate.TokenIn.Amount * 0.000001) * prices[0].Price
-							}
+							price = prices[0].Price
+						}
+
+						if swapCreate.Type == 0 {
+							swapCreate.UsdValue = (swapCreate.TokenOut.Amount * 0.000001) * price
 						} else {
-							log.Fatalf("price not found %s", tx.Time.String())
+							swapCreate.UsdValue = (swapCreate.TokenIn.Amount * 0.000001) * price
 						}
 
 						// save swap
