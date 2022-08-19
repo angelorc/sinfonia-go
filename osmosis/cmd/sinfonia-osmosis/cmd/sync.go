@@ -141,7 +141,7 @@ func syncSwaps() error {
 	poolRepo := repository.NewPoolRepository()
 	hpr := repository.NewHistoricalPriceRepository()
 
-	limit := 10000
+	limit := 2000
 	fromBlock := sync.Swaps + 1
 	toBlock := fromBlock + int64(limit)
 	batches := int(math.Ceil(float64(lastBlock-fromBlock) / float64(limit)))
