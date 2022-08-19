@@ -164,8 +164,11 @@ func syncSwaps() error {
 		}
 
 		for _, tx := range txs {
+			log.Printf("Scanning tx: %s...\n", tx.Hash)
+
 			for _, evt := range tx.Events {
 				groupedAttrs := chunkSlice(evt.Attributes, 5)
+				log.Printf("found %d events...\n", len(groupedAttrs))
 
 				for _, attrs := range groupedAttrs {
 					swapCreate := &modelv2.SwapCreateReq{
@@ -206,14 +209,6 @@ func syncSwaps() error {
 							swapCreate.Type = 1 // sell
 						}
 
-						/*if swapCreate.Type == 0 {
-							swapCreate.PriceBase = swapCreate.TokenIn.Amount / swapCreate.TokenOut.Amount
-							swapCreate.PriceQuote = swapCreate.TokenOut.Amount / swapCreate.TokenIn.Amount
-						} else {
-							swapCreate.PriceBase = swapCreate.TokenOut.Amount / swapCreate.TokenIn.Amount
-							swapCreate.PriceQuote = swapCreate.TokenIn.Amount / swapCreate.TokenOut.Amount
-						}*/
-
 						// add usd value
 						price := float64(0)
 						prices := hpr.FindByAsset(pool.GetQuoteAsset().Denom, tx.Time)
@@ -228,7 +223,6 @@ func syncSwaps() error {
 						}
 
 						// save swap
-						//swapCreateBatch = append(swapCreateBatch, swapCreate)
 						_, err := swapRepo.Create(swapCreate)
 
 						if err != nil {
@@ -236,29 +230,15 @@ func syncSwaps() error {
 								log.Fatalf("Failed to write swap to db. Err: %s", err.Error())
 							}
 						}
-
-						/*price := swapCreate.UsdValue / (swapCreate.TokenIn.Amount * 0.000001)
-						historyCreateBatch = append(historyCreateBatch, &modelv2.HistoricalPriceCreateReq{
-							Asset: swapCreate.TokenIn.Denom,
-							Price: price,
-							Time:  tx.Time,
-						})
-
-						price = swapCreate.UsdValue / (swapCreate.TokenOut.Amount * 0.000001)
-						historyCreateBatch = append(historyCreateBatch, &modelv2.HistoricalPriceCreateReq{
-							Asset: swapCreate.TokenOut.Denom,
-							Price: price,
-							Time:  tx.Time,
-						})*/
 					}
 				}
 			}
-		}
 
-		// update sync with last synced height
-		sync.Swaps = toBlock
-		if err := sync.Save(); err != nil {
-			return err
+			// update sync with last synced height
+			sync.Swaps = tx.Height
+			if err := sync.Save(); err != nil {
+				return err
+			}
 		}
 
 		fromBlock = toBlock + 1
