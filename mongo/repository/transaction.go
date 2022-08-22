@@ -11,7 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"time"
 )
 
 const (
@@ -39,7 +38,7 @@ type TransactionRepository interface {
 
 func NewTransactionRepository() TransactionRepository {
 	coll := db.GetCollection(transactionCollectionName, transactionDbRefName)
-	ctx, _ := context.WithTimeout(context.Background(), 3000*time.Second)
+	ctx := context.Background()
 	//defer cancel()
 
 	return &transactionRepository{context: ctx, collection: coll}

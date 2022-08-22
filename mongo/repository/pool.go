@@ -11,7 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"time"
 )
 
 const (
@@ -38,7 +37,7 @@ type PoolRepository interface {
 
 func NewPoolRepository() PoolRepository {
 	coll := db.GetCollection(poolCollectionName, poolDbRefName)
-	ctx, _ := context.WithTimeout(context.Background(), 3000*time.Second)
+	ctx := context.Background()
 	//defer cancel()
 
 	return &poolRepository{context: ctx, collection: coll}

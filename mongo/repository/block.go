@@ -11,7 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"time"
 )
 
 const (
@@ -41,7 +40,7 @@ type BlockRepository interface {
 
 func NewBlockRepository() BlockRepository {
 	coll := db.GetCollection(blockCollectionName, blockDbRefName)
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx := context.Background()
 	//defer cancel()
 
 	return &blockRepository{context: ctx, collection: coll}

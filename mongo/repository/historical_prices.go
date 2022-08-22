@@ -39,7 +39,7 @@ type HistoricalPriceRepository interface {
 
 func NewHistoricalPriceRepository() HistoricalPriceRepository {
 	coll := db.GetCollection(historicalPricesCollectionName, historicalPricesDbRefName)
-	ctx, _ := context.WithTimeout(context.Background(), 3000*time.Second)
+	ctx := context.Background()
 	//defer cancel()
 
 	tsOpts := options.TimeSeries().SetTimeField("time")
